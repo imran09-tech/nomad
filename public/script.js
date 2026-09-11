@@ -5736,25 +5736,17 @@ function initNatureLoader() {
     let progress = 0;
     const bar = document.getElementById('nature-progress-bar');
     const text = document.getElementById('nature-progress-text');
-    const telemetry = document.getElementById('nature-status-telemetry');
+
     const compassIcon = document.getElementById('portal-compass-icon');
 
-    const telemetryStatuses = [
-        { limit: 25, text: 'WE ARE NOT SAME AS COMMON MAN...' },
-        { limit: 65, text: 'WE ARE BORN FOR DOING SOMETHING GREAT...' },
-        { limit: 92, text: 'SO DO IT HARD WORK...' },
-        { limit: 100, text: 'WE ARE NOT SAME AS COMMON MAN WE ARE BORN FOR DOING SOMETHING GREAT SO DO IT HARD WORK' }
-    ];
-
     const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 5) + 3;
+        progress += Math.floor(Math.random() * 20) + 15;
         if (progress >= 100) {
             progress = 100;
             clearInterval(interval);
             if (bar) bar.style.width = '100%';
             if (text) text.textContent = '100%';
             if (compassIcon) compassIcon.style.transform = 'rotate(360deg)';
-            if (telemetry) telemetry.textContent = 'PORTAL READY • WELCOME TO IMXX LUXURY';
 
             setTimeout(() => {
                 loader.classList.add('fade-out');
@@ -5766,17 +5758,12 @@ function initNatureLoader() {
                         loader._fallbackCleanup();
                     }
                     loader.style.display = 'none';
-                }, 400);
-            }, 50);
+                }, 300);
+            }, 10);
         } else {
             if (bar) bar.style.width = progress + '%';
             if (text) text.textContent = progress + '%';
             if (compassIcon) compassIcon.style.transform = `rotate(${progress * 3.6}deg)`;
-            
-            if (telemetry) {
-                const status = telemetryStatuses.find(s => progress <= s.limit);
-                if (status) telemetry.textContent = status.text;
-            }
         }
     }, 16);
 }

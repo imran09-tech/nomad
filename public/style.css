@@ -4559,7 +4559,7 @@ body.light-mode #details-desc {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s ease, filter 0.9s ease;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, filter 0.3s ease;
     overflow: hidden;
     perspective: 1200px;
 }
@@ -4725,18 +4725,29 @@ body.light-mode #details-desc {
     }
 }
 
-/* Metallic Gold Foil Typography */
+@keyframes imxx-pulse-glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5));
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 60px rgba(212, 175, 55, 1));
+        transform: scale(1.08);
+    }
+}
+
 .nature-brand-title {
     font-family: var(--font-heading);
-    font-size: 38px;
+    font-size: 80px;
     font-weight: 900;
-    letter-spacing: 7px;
-    margin-bottom: 6px;
+    letter-spacing: 12px;
+    margin-bottom: 20px;
     text-transform: uppercase;
     background: linear-gradient(135deg, #ffffff 0%, #F9D976 40%, #D4AF37 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.5));
+    animation: imxx-pulse-glow 2.5s ease-in-out infinite;
+    display: inline-block;
 }
 
 .nature-brand-title span {

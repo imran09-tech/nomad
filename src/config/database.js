@@ -2,7 +2,9 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.resolve(__dirname, '../../nomad.db');
+const dbPath = process.env.VERCEL 
+  ? path.join('/tmp', 'nomad.db') 
+  : path.resolve(__dirname, '../../nomad.db');
 const db = new sqlite3.Database(dbPath);
 
 // Wrap db operations in a promise-based helper

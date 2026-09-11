@@ -174,7 +174,9 @@ app.use('/pic', express.static(path.join(__dirname, '../pic')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ─── Destination Video Upload & Range-Streaming Layer ────────────────────────
-const videoUploadDir = path.join(__dirname, '../uploads/videos');
+const videoUploadDir = process.env.VERCEL 
+  ? path.join('/tmp', 'uploads', 'videos')
+  : path.join(__dirname, '../uploads/videos');
 if (!fs.existsSync(videoUploadDir)) {
   fs.mkdirSync(videoUploadDir, { recursive: true });
 }
@@ -266,7 +268,9 @@ app.post('/api/destinations/:id/video', (req, res, next) => {
   });
 });
 // ─── Destination Image Upload Layer ────────────────────────
-const imageUploadDir = path.join(__dirname, '../uploads/images');
+const imageUploadDir = process.env.VERCEL 
+  ? path.join('/tmp', 'uploads', 'images')
+  : path.join(__dirname, '../uploads/images');
 if (!fs.existsSync(imageUploadDir)) {
   fs.mkdirSync(imageUploadDir, { recursive: true });
 }
@@ -1529,15 +1533,24 @@ app.use('/api', (req, res) => {
 
 
 // ─────────────────────────────────────────────
-//  START SERVER
+//  START SERVER OR EXPORT FOR SERVERLESS
 // ─────────────────────────────────────────────
-initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`✅ IMXX Server running on http://localhost:${PORT}`);
-    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`   CORS origin: ${CLIENT_ORIGIN}`);
+
+if (process.env.VERCEL) {
+  // If running on Vercel, we need to initialize the database synchronously or handle it gracefully,
+  // then export the app for the serverless function.
+  initializeDatabase().catch(err => console.error('DB Init Error:', err));
+  module.exports = app;
+} else {
+  // Local development or standard VPS hosting
+  initializeDatabase().then(() => {
+    app.listen(PORT, () => {
+      console.log(`✅ IMXX Server running on http://localhost:${PORT}`);
+      console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`   CORS origin: ${CLIENT_ORIGIN}`);
+    });
+  }).catch(err => {
+    console.error('[FATAL] Database initialization failed:', err);
+    process.exit(1);
   });
-}).catch(err => {
-  console.error('[FATAL] Database initialization failed:', err);
-  process.exit(1);
-});
+}

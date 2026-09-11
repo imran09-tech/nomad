@@ -7,11 +7,11 @@ const { searchTransit } = require('../controllers/transitController');
 // If it exists in middleware folder, we can require it. For now, we will add a dummy or require it dynamically if available.
 let protectRoute;
 try {
-    const auth = require('../middleware/auth');
-    protectRoute = auth.authenticateToken;
+  const auth = require('../middleware/auth');
+  protectRoute = auth.authenticateToken;
 } catch (e) {
-    // Dummy protect for development if it doesn't exist yet
-    protectRoute = (req, res, next) => next();
+  // Dummy protect for development if it doesn't exist yet
+  protectRoute = (req, res, next) => next();
 }
 
 router.route('/search').get(protectRoute, searchTransit);

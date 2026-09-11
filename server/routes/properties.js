@@ -25,10 +25,10 @@
 'use strict';
 
 const express = require('express');
-const crypto  = require('crypto');
-const https   = require('https');
-const http    = require('http');
-const router  = express.Router();
+const crypto = require('crypto');
+const https = require('https');
+const http = require('http');
+const router = express.Router();
 
 const {
   buildSearchPayload,
@@ -41,9 +41,9 @@ let authenticateToken, dbRun, dbGet, dbAll;
 
 function init(deps) {
   authenticateToken = deps.authenticateToken;
-  dbRun             = deps.dbRun;
-  dbGet             = deps.dbGet;
-  dbAll             = deps.dbAll;
+  dbRun = deps.dbRun;
+  dbGet = deps.dbGet;
+  dbAll = deps.dbAll;
 }
 
 const requireAuth = (req, res, next) => {
@@ -51,21 +51,20 @@ const requireAuth = (req, res, next) => {
   next(new Error('authenticateToken not initialized'));
 };
 
-
 // ── In-Memory Search Cache ─────────────────────────────────────────────────────
 // Key: SHA-256 of the search parameters string
 // Value: { data: [...], cachedAt: timestamp }
-const searchCache    = new Map();
+const searchCache = new Map();
 const CM_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function getCacheKey(params) {
   const normalized = JSON.stringify({
-    destination:   (params.destination  || '').toLowerCase().trim(),
-    checkInDate:   params.checkInDate,
-    checkOutDate:  params.checkOutDate,
-    guests:        parseInt(params.guests, 10) || 1,
-    propertyType:  params.propertyType || 'all',
-    currency:      (params.currency || 'USD').toUpperCase(),
+    destination: (params.destination || '').toLowerCase().trim(),
+    checkInDate: params.checkInDate,
+    checkOutDate: params.checkOutDate,
+    guests: parseInt(params.guests, 10) || 1,
+    propertyType: params.propertyType || 'all',
+    currency: (params.currency || 'USD').toUpperCase(),
   });
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
@@ -107,23 +106,27 @@ function setCache(key, data) {
  * @returns {Promise<object>} Raw CM API response body
  */
 async function callChannelManagerSearch(searchPayload) {
-  const useMock = process.env.CM_MOCK_MODE !== 'false';   // default: mock mode ON
+  const useMock = process.env.CM_MOCK_MODE !== 'false'; // default: mock mode ON
 
   if (useMock) {
     // Simulated latency (realistic dev experience)
     const latency = 120 + Math.random() * 280;
-    await new Promise(r => setTimeout(r, latency));
-    console.log(`[CM] Mock search for "${searchPayload.search.destination}" (${latency.toFixed(0)}ms simulated)`);
+    await new Promise((r) => setTimeout(r, latency));
+    console.log(
+      `[CM] Mock search for "${searchPayload.search.destination}" (${latency.toFixed(0)}ms simulated)`
+    );
     return simulateCMSearchResponse(searchPayload);
   }
 
   // ── Production HTTP call ─────────────────────────────────────────────────
   const CM_BASE_URL = process.env.CM_API_BASE_URL;
-  const CM_API_KEY  = process.env.CM_API_KEY;
-  const CM_SECRET   = process.env.CM_API_SECRET;
+  const CM_API_KEY = process.env.CM_API_KEY;
+  const CM_SECRET = process.env.CM_API_SECRET;
 
   if (!CM_BASE_URL || !CM_API_KEY) {
-    throw new Error('[CM] CM_API_BASE_URL and CM_API_KEY must be set in .env when CM_MOCK_MODE=false');
+    throw new Error(
+      '[CM] CM_API_BASE_URL and CM_API_KEY must be set in .env when CM_MOCK_MODE=false'
+    );
   }
 
   // HMAC signature for request authentication (AxisRooms/Cloudbeds pattern)
@@ -133,32 +136,32 @@ async function callChannelManagerSearch(searchPayload) {
     .update(timestamp + JSON.stringify(searchPayload))
     .digest('hex');
 
-  const body    = JSON.stringify(searchPayload);
-  const url     = new URL('/api/v2/search', CM_BASE_URL);
-  const lib     = url.protocol === 'https:' ? https : http;
+  const body = JSON.stringify(searchPayload);
+  const url = new URL('/api/v2/search', CM_BASE_URL);
+  const lib = url.protocol === 'https:' ? https : http;
 
   return new Promise((resolve, reject) => {
     const req = lib.request(
       {
         hostname: url.hostname,
-        port:     url.port || (url.protocol === 'https:' ? 443 : 80),
-        path:     url.pathname,
-        method:   'POST',
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
+        path: url.pathname,
+        method: 'POST',
         headers: {
-          'Content-Type':    'application/json',
-          'Content-Length':  Buffer.byteLength(body),
-          'X-API-Key':       CM_API_KEY,
-          'X-Timestamp':     timestamp,
-          'X-Signature':     signature,
-          'X-Channel':       'IMXX_NOMAD',
-          'Accept':          'application/json',
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          'X-API-Key': CM_API_KEY,
+          'X-Timestamp': timestamp,
+          'X-Signature': signature,
+          'X-Channel': 'IMXX_NOMAD',
+          Accept: 'application/json',
           'Accept-Encoding': 'gzip',
         },
-        timeout: 12000,  // 12s timeout — CM APIs can be slow
+        timeout: 12000, // 12s timeout — CM APIs can be slow
       },
       (res) => {
         let raw = '';
-        res.on('data', chunk => (raw += chunk));
+        res.on('data', (chunk) => (raw += chunk));
         res.on('end', () => {
           try {
             const parsed = JSON.parse(raw);
@@ -179,7 +182,7 @@ async function callChannelManagerSearch(searchPayload) {
       reject(new Error('[CM] Search request timed out after 12 seconds'));
     });
 
-    req.on('error', err => reject(new Error(`[CM] Network error: ${err.message}`)));
+    req.on('error', (err) => reject(new Error(`[CM] Network error: ${err.message}`)));
     req.write(body);
     req.end();
   });
@@ -216,11 +219,11 @@ router.get('/search', async (req, res, next) => {
     destination,
     checkInDate,
     checkOutDate,
-    guests     = '1',
-    currency   = 'USD',
+    guests = '1',
+    currency = 'USD',
     propertyType = 'all',
-    noCache    = 'false',
-    sortBy     = 'rating_desc',
+    noCache = 'false',
+    sortBy = 'rating_desc',
     maxPrice,
     minRating,
   } = req.query;
@@ -231,11 +234,13 @@ router.get('/search', async (req, res, next) => {
   }
 
   if (!checkInDate || !checkOutDate) {
-    return res.status(400).json({ error: 'Both checkInDate and checkOutDate are required (YYYY-MM-DD).' });
+    return res
+      .status(400)
+      .json({ error: 'Both checkInDate and checkOutDate are required (YYYY-MM-DD).' });
   }
 
   // ── 2. Check In-Memory Cache ──────────────────────────────────────────────
-  const cacheKey     = getCacheKey(req.query);
+  const cacheKey = getCacheKey(req.query);
   const forcedNoCache = noCache === 'true';
 
   if (!forcedNoCache) {
@@ -245,7 +250,7 @@ router.get('/search', async (req, res, next) => {
       return res.json({
         ...cached.data,
         servedFromCache: true,
-        cacheAgeMs:     Date.now() - cached.cachedAt,
+        cacheAgeMs: Date.now() - cached.cachedAt,
         responseTimeMs: Date.now() - startTime,
       });
     }
@@ -256,12 +261,12 @@ router.get('/search', async (req, res, next) => {
   try {
     searchPayload = buildSearchPayload({
       destination: destination.trim(),
-      checkInDate:  checkInDate.trim(),
+      checkInDate: checkInDate.trim(),
       checkOutDate: checkOutDate.trim(),
-      guests:       parseInt(guests, 10) || 1,
-      currency:     currency.toUpperCase(),
+      guests: parseInt(guests, 10) || 1,
+      currency: currency.toUpperCase(),
       propertyType,
-      maxResults:   50,
+      maxResults: 50,
     });
   } catch (validationErr) {
     return res.status(400).json({ error: validationErr.message });
@@ -275,8 +280,8 @@ router.get('/search', async (req, res, next) => {
     console.error('[Properties] Channel Manager call failed:', cmErr.message);
     // Return a degraded response rather than crashing — UX can show "no results"
     return res.status(503).json({
-      error:   'Inventory service temporarily unavailable. Please try again shortly.',
-      code:    'CM_UNAVAILABLE',
+      error: 'Inventory service temporarily unavailable. Please try again shortly.',
+      code: 'CM_UNAVAILABLE',
       retryIn: 30,
     });
   }
@@ -287,17 +292,15 @@ router.get('/search', async (req, res, next) => {
   );
   const guestCount = parseInt(guests, 10) || 1;
 
-  const rawProperties = Array.isArray(cmResponse.properties)
-    ? cmResponse.properties
-    : [];
+  const rawProperties = Array.isArray(cmResponse.properties) ? cmResponse.properties : [];
 
   let mappedProperties = rawProperties
-    .map(raw => {
+    .map((raw) => {
       try {
         return mapPropertyToNative(raw, {
           nights,
-          guests:       guestCount,
-          checkInDate:  checkInDate.trim(),
+          guests: guestCount,
+          checkInDate: checkInDate.trim(),
           checkOutDate: checkOutDate.trim(),
         });
       } catch (mapErr) {
@@ -306,14 +309,14 @@ router.get('/search', async (req, res, next) => {
         return null;
       }
     })
-    .filter(p => p !== null && p.isAvailable);   // only available results
+    .filter((p) => p !== null && p.isAvailable); // only available results
 
   // ── 6. Client-Side Filters (applied server-side for security) ────────────
   if (maxPrice) {
     const maxPriceNum = parseFloat(maxPrice);
     if (!isNaN(maxPriceNum)) {
       mappedProperties = mappedProperties.filter(
-        p => p.pricePerNight !== null && p.pricePerNight <= maxPriceNum
+        (p) => p.pricePerNight !== null && p.pricePerNight <= maxPriceNum
       );
     }
   }
@@ -321,14 +324,16 @@ router.get('/search', async (req, res, next) => {
   if (minRating) {
     const minRatingNum = parseFloat(minRating);
     if (!isNaN(minRatingNum)) {
-      mappedProperties = mappedProperties.filter(p => p.rating >= minRatingNum);
+      mappedProperties = mappedProperties.filter((p) => p.rating >= minRatingNum);
     }
   }
 
   // ── 7. Sort Results ───────────────────────────────────────────────────────
   switch (sortBy) {
     case 'price_asc':
-      mappedProperties.sort((a, b) => (a.pricePerNight || Infinity) - (b.pricePerNight || Infinity));
+      mappedProperties.sort(
+        (a, b) => (a.pricePerNight || Infinity) - (b.pricePerNight || Infinity)
+      );
       break;
     case 'price_desc':
       mappedProperties.sort((a, b) => (b.pricePerNight || 0) - (a.pricePerNight || 0));
@@ -341,31 +346,30 @@ router.get('/search', async (req, res, next) => {
   // ── 8. Build & Cache Final Response ──────────────────────────────────────
   const responsePayload = {
     properties: mappedProperties,
-    total:      mappedProperties.length,
+    total: mappedProperties.length,
     searchContext: {
-      destination:  destination.trim(),
-      checkInDate:  checkInDate.trim(),
+      destination: destination.trim(),
+      checkInDate: checkInDate.trim(),
       checkOutDate: checkOutDate.trim(),
       nights,
-      guests:       guestCount,
-      currency:     currency.toUpperCase(),
+      guests: guestCount,
+      currency: currency.toUpperCase(),
       sortBy,
     },
-    source:          process.env.CM_MOCK_MODE !== 'false' ? 'mock_cm' : 'live_cm',
+    source: process.env.CM_MOCK_MODE !== 'false' ? 'mock_cm' : 'live_cm',
     servedFromCache: false,
-    responseTimeMs:  Date.now() - startTime,
+    responseTimeMs: Date.now() - startTime,
   };
 
   setCache(cacheKey, responsePayload);
 
   console.log(
     `[Properties] Search: "${destination}" | ${nights}n | ${guestCount}g | ` +
-    `${mappedProperties.length} results | ${Date.now() - startTime}ms`
+      `${mappedProperties.length} results | ${Date.now() - startTime}ms`
   );
 
   return res.json(responsePayload);
 });
-
 
 // ── ROUTE: GET /api/properties/:id ────────────────────────────────────────────
 // Fetch full detail for a single property (used when user clicks a card).
@@ -385,16 +389,14 @@ router.get('/:id', async (req, res, next) => {
   try {
     const mockSearch = simulateCMSearchResponse(
       buildSearchPayload({
-        destination:  'any',
-        checkInDate:  new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+        destination: 'any',
+        checkInDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
         checkOutDate: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
-        guests:       1,
+        guests: 1,
       })
     );
 
-    const raw = mockSearch.properties.find(
-      p => `gds-${p.property_id}` === id
-    );
+    const raw = mockSearch.properties.find((p) => `gds-${p.property_id}` === id);
 
     if (!raw) {
       return res.status(404).json({ error: 'Property not found or no longer available.' });
@@ -407,7 +409,6 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-
 // ── ROUTE: DELETE /api/properties/cache ──────────────────────────────────────
 // Admin endpoint to manually invalidate the search cache.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -418,6 +419,5 @@ router.delete('/cache', requireAuth, (req, res) => {
   console.log(`[Properties] Cache manually cleared: ${count} entries removed.`);
   return res.json({ message: `Search cache cleared. ${count} entries removed.` });
 });
-
 
 module.exports = { router, init };

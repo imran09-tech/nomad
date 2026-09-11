@@ -19,9 +19,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -38,12 +38,16 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB Limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Limit
 });
 
 // P2P Routes
 router.post('/trades', p2pController.createTrade);
-router.post('/trades/:tradeId/submit-proof', upload.single('screenshot'), p2pController.submitPaymentProof);
+router.post(
+  '/trades/:tradeId/submit-proof',
+  upload.single('screenshot'),
+  p2pController.submitPaymentProof
+);
 router.post('/trades/:tradeId/verify', authenticateOptional, p2pController.verifyTradePayment);
 router.get('/trades/:tradeId', p2pController.getTradeDetails);
 

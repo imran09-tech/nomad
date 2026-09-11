@@ -48,7 +48,7 @@ const MINIMUM_MARKUP_MULTIPLIER = 1.05;
  * Maximum markup cap: never show more than 40% above net rate (prevents
  * rate parity violations on most OTA contracts).
  */
-const MAXIMUM_MARKUP_MULTIPLIER = 1.40;
+const MAXIMUM_MARKUP_MULTIPLIER = 1.4;
 
 // ── 1. SEARCH PAYLOAD BUILDER ─────────────────────────────────────────────────
 
@@ -73,23 +73,23 @@ function buildSearchPayload(params) {
     destination,
     checkInDate,
     checkOutDate,
-    guests       = 1,
-    currency     = 'USD',
-    maxResults   = 40,
+    guests = 1,
+    currency = 'USD',
+    maxResults = 40,
     propertyType = 'all',
   } = params;
 
   // ── Date validation ────────────────────────────────────────────────────────
   const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  if (!ISO_DATE_RE.test(checkInDate))  throw new Error('checkInDate must be YYYY-MM-DD');
+  if (!ISO_DATE_RE.test(checkInDate)) throw new Error('checkInDate must be YYYY-MM-DD');
   if (!ISO_DATE_RE.test(checkOutDate)) throw new Error('checkOutDate must be YYYY-MM-DD');
 
-  const checkIn  = new Date(checkInDate);
+  const checkIn = new Date(checkInDate);
   const checkOut = new Date(checkOutDate);
-  const today    = new Date();
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  if (checkIn < today)     throw new Error('checkInDate cannot be in the past');
+  if (checkIn < today) throw new Error('checkInDate cannot be in the past');
   if (checkOut <= checkIn) throw new Error('checkOutDate must be after checkInDate');
 
   const nights = Math.round((checkOut - checkIn) / (1000 * 60 * 60 * 24));
@@ -103,24 +103,25 @@ function buildSearchPayload(params) {
   return {
     // CM API envelope
     api_version: '2.1',
-    request_id:  crypto.randomUUID(),
-    channel:     'IMXX_NOMAD',
+    request_id: crypto.randomUUID(),
+    channel: 'IMXX_NOMAD',
 
     // Search criteria (CM snake_case format)
     search: {
-      destination:   destination.trim(),
+      destination: destination.trim(),
       check_in_date: checkInDate,
       check_out_date: checkOutDate,
       nights,
       guests: {
-        adults:   guestCount,
+        adults: guestCount,
         children: 0,
       },
-      property_types: propertyType === 'all'
-        ? ['hostel', 'hotel', 'guesthouse', 'villa', 'apartment']
-        : [propertyType],
+      property_types:
+        propertyType === 'all'
+          ? ['hostel', 'hotel', 'guesthouse', 'villa', 'apartment']
+          : [propertyType],
       currency_code: currency.toUpperCase(),
-      max_results:   Math.min(maxResults, 100),
+      max_results: Math.min(maxResults, 100),
       include_unavailable: false,
     },
   };
@@ -147,24 +148,30 @@ function mapPropertyToNative(rawProperty, options = {}) {
   const { nights = 1, guests = 1, checkInDate = '', checkOutDate = '' } = options;
 
   // ── Defensive access helpers ───────────────────────────────────────────────
-  const safe   = (val, fallback = '') => (val !== null && val !== undefined ? val : fallback);
-  const safeN  = (val, fallback = 0)  => (typeof val === 'number' && isFinite(val) ? val : fallback);
+  const safe = (val, fallback = '') => (val !== null && val !== undefined ? val : fallback);
+  const safeN = (val, fallback = 0) => (typeof val === 'number' && isFinite(val) ? val : fallback);
   const safeArr = (val) => (Array.isArray(val) ? val : []);
 
   // ── Property Identity ──────────────────────────────────────────────────────
-  const propertyId   = safe(rawProperty.property_id   || rawProperty.id, `cm-${crypto.randomBytes(4).toString('hex')}`);
-  const propertyName = safe(rawProperty.property_name || rawProperty.name || rawProperty.title, 'Unnamed Property');
+  const propertyId = safe(
+    rawProperty.property_id || rawProperty.id,
+    `cm-${crypto.randomBytes(4).toString('hex')}`
+  );
+  const propertyName = safe(
+    rawProperty.property_name || rawProperty.name || rawProperty.title,
+    'Unnamed Property'
+  );
 
   // ── Location Block ─────────────────────────────────────────────────────────
   const loc = rawProperty.location || rawProperty.address || {};
   const location = {
-    city:        safe(loc.city    || rawProperty.city    || rawProperty.destination),
-    country:     safe(loc.country || rawProperty.country),
+    city: safe(loc.city || rawProperty.city || rawProperty.destination),
+    country: safe(loc.country || rawProperty.country),
     countryCode: safe(loc.country_code || rawProperty.country_code),
-    region:      safe(loc.region  || rawProperty.region),
+    region: safe(loc.region || rawProperty.region),
     fullAddress: safe(loc.full_address || loc.address || rawProperty.address_line),
     coordinates: {
-      lat: safeN(loc.latitude  || rawProperty.lat),
+      lat: safeN(loc.latitude || rawProperty.lat),
       lng: safeN(loc.longitude || rawProperty.lng),
     },
   };
@@ -180,79 +187,81 @@ function mapPropertyToNative(rawProperty, options = {}) {
     rawImages = [{ url: rawProperty.hero_image, caption: propertyName, is_hero: true }];
   }
 
-  const images = rawImages.map((img, idx) => ({
-    url:     safe(img.url || img.src || img.link),
-    caption: safe(img.caption || img.alt || img.title || `${propertyName} — Photo ${idx + 1}`),
-    isHero:  !!(img.is_hero || img.is_primary || idx === 0),
-    width:   safeN(img.width,  1920),
-    height:  safeN(img.height, 1080),
-  })).filter(img => img.url);  // remove any entries with no URL
+  const images = rawImages
+    .map((img, idx) => ({
+      url: safe(img.url || img.src || img.link),
+      caption: safe(img.caption || img.alt || img.title || `${propertyName} — Photo ${idx + 1}`),
+      isHero: !!(img.is_hero || img.is_primary || idx === 0),
+      width: safeN(img.width, 1920),
+      height: safeN(img.height, 1080),
+    }))
+    .filter((img) => img.url); // remove any entries with no URL
 
   // Ensure there is always at least one hero image fallback
   if (images.length === 0) {
     images.push({
-      url:     `https://ui-avatars.com/api/?name=${encodeURIComponent(propertyName)}&size=800&background=c9a44d&color=0d0f1e`,
+      url: `https://ui-avatars.com/api/?name=${encodeURIComponent(propertyName)}&size=800&background=c9a44d&color=0d0f1e`,
       caption: propertyName,
-      isHero:  true,
+      isHero: true,
     });
   }
 
   // ── Rating & Review Block ──────────────────────────────────────────────────
-  const ratingRaw  = rawProperty.rating || rawProperty.star_rating || rawProperty.review_score || {};
-  const ratingValue = typeof ratingRaw === 'number'
-    ? ratingRaw
-    : safeN(ratingRaw.overall || ratingRaw.value || ratingRaw.score);
+  const ratingRaw = rawProperty.rating || rawProperty.star_rating || rawProperty.review_score || {};
+  const ratingValue =
+    typeof ratingRaw === 'number'
+      ? ratingRaw
+      : safeN(ratingRaw.overall || ratingRaw.value || ratingRaw.score);
 
   // Normalize to 0-5 scale (some CMs use 0-10 or 0-100)
-  const ratingNormalised = ratingValue > 10
-    ? parseFloat((ratingValue / 20).toFixed(1))   // 0-100 → 0-5
-    : ratingValue > 5
-      ? parseFloat((ratingValue / 2).toFixed(1))   // 0-10  → 0-5
-      : parseFloat(ratingValue.toFixed(1));         // already 0-5
+  const ratingNormalised =
+    ratingValue > 10
+      ? parseFloat((ratingValue / 20).toFixed(1)) // 0-100 → 0-5
+      : ratingValue > 5
+        ? parseFloat((ratingValue / 2).toFixed(1)) // 0-10  → 0-5
+        : parseFloat(ratingValue.toFixed(1)); // already 0-5
 
-  const reviewCount = safeN(
-    rawProperty.review_count || rawProperty.num_reviews || ratingRaw.count
-  );
+  const reviewCount = safeN(rawProperty.review_count || rawProperty.num_reviews || ratingRaw.count);
 
   // ── Amenities Normalisation ────────────────────────────────────────────────
   const rawAmenities = safeArr(
     rawProperty.amenities || rawProperty.facilities || rawProperty.features
   );
-  const amenities = rawAmenities.map(a =>
-    typeof a === 'string' ? a : safe(a.name || a.label || a.description)
-  ).filter(Boolean);
+  const amenities = rawAmenities
+    .map((a) => (typeof a === 'string' ? a : safe(a.name || a.label || a.description)))
+    .filter(Boolean);
 
   // ── Room Types (Rate Plans) ────────────────────────────────────────────────
-  const rawRooms = safeArr(
-    rawProperty.room_types || rawProperty.rate_plans || rawProperty.rooms
-  );
+  const rawRooms = safeArr(rawProperty.room_types || rawProperty.rate_plans || rawProperty.rooms);
 
-  const roomTypes = rawRooms.map(room => {
-    const netRate = safeN(
-      room.net_rate || room.rate || room.price || room.base_price
-    );
+  const roomTypes = rawRooms.map((room) => {
+    const netRate = safeN(room.net_rate || room.rate || room.price || room.base_price);
     const { displayPrice, markup, netRateUsed } = applyMarkup(netRate, rawProperty);
 
     return {
-      id:              safe(room.room_type_id || room.id),
-      name:            safe(room.room_type_name || room.name || room.type, 'Standard Room'),
-      description:     safe(room.description || room.room_description),
-      maxOccupancy:    safeN(room.max_occupancy || room.capacity, guests),
-      bedConfiguration:safe(room.bed_type || room.bed_configuration, 'Standard Bed'),
-      netRatePerNight: netRate,                   // what we pay CM (hidden from user)
-      displayPricePerNight: displayPrice,         // what user sees (includes markup)
-      totalDisplayPrice:    parseFloat((displayPrice * nights).toFixed(2)),
-      markupApplied:   markup,
-      available:       !!(room.is_available !== false && room.available !== false),
-      cancellationPolicy: safe(room.cancellation_policy || rawProperty.cancellation_policy, 'Standard'),
-      mealPlan:        safe(room.meal_plan || room.board_type, 'Room Only'),
-      remainingRooms:  safeN(room.rooms_available || room.remaining_inventory, null),
+      id: safe(room.room_type_id || room.id),
+      name: safe(room.room_type_name || room.name || room.type, 'Standard Room'),
+      description: safe(room.description || room.room_description),
+      maxOccupancy: safeN(room.max_occupancy || room.capacity, guests),
+      bedConfiguration: safe(room.bed_type || room.bed_configuration, 'Standard Bed'),
+      netRatePerNight: netRate, // what we pay CM (hidden from user)
+      displayPricePerNight: displayPrice, // what user sees (includes markup)
+      totalDisplayPrice: parseFloat((displayPrice * nights).toFixed(2)),
+      markupApplied: markup,
+      available: !!(room.is_available !== false && room.available !== false),
+      cancellationPolicy: safe(
+        room.cancellation_policy || rawProperty.cancellation_policy,
+        'Standard'
+      ),
+      mealPlan: safe(room.meal_plan || room.board_type, 'Room Only'),
+      remainingRooms: safeN(room.rooms_available || room.remaining_inventory, null),
     };
   });
 
   // Compute the "hero" price for the search results card (cheapest available room)
-  const availableRooms  = roomTypes.filter(r => r.available);
-  const heroRoom        = availableRooms.sort((a, b) => a.displayPricePerNight - b.displayPricePerNight)[0] || null;
+  const availableRooms = roomTypes.filter((r) => r.available);
+  const heroRoom =
+    availableRooms.sort((a, b) => a.displayPricePerNight - b.displayPricePerNight)[0] || null;
   const heroDisplayPrice = heroRoom ? heroRoom.displayPricePerNight : null;
 
   // ── Policies Block ─────────────────────────────────────────────────────────
@@ -261,28 +270,31 @@ function mapPropertyToNative(rawProperty, options = {}) {
   // ── Assembled Native Object ────────────────────────────────────────────────
   return {
     // Identity
-    id:           `gds-${propertyId}`,
-    externalId:   propertyId,
-    source:       'channel_manager',
-    name:         propertyName,
-    slug:         propertyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+    id: `gds-${propertyId}`,
+    externalId: propertyId,
+    source: 'channel_manager',
+    name: propertyName,
+    slug: propertyName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, ''),
 
     // Location
     location,
 
     // Imagery
     images,
-    heroImage:    images.find(i => i.isHero) || images[0],
+    heroImage: images.find((i) => i.isHero) || images[0],
 
     // Rating
-    rating:       ratingNormalised,
+    rating: ratingNormalised,
     reviewCount,
-    starRating:   safeN(rawProperty.star_rating || rawProperty.stars),
+    starRating: safeN(rawProperty.star_rating || rawProperty.stars),
 
     // Pricing (display-ready)
-    pricePerNight:      heroDisplayPrice,
-    currency:           safe(rawProperty.currency || rawProperty.currency_code, 'USD'),
-    isAvailable:        availableRooms.length > 0,
+    pricePerNight: heroDisplayPrice,
+    currency: safe(rawProperty.currency || rawProperty.currency_code, 'USD'),
+    isAvailable: availableRooms.length > 0,
 
     // Room types (full detail for booking modal)
     roomTypes,
@@ -295,18 +307,18 @@ function mapPropertyToNative(rawProperty, options = {}) {
 
     // Policies
     policies: {
-      checkIn:       safe(policies.check_in_time  || rawProperty.check_in_time,  '14:00'),
-      checkOut:      safe(policies.check_out_time || rawProperty.check_out_time, '11:00'),
-      cancellation:  safe(policies.cancellation   || rawProperty.cancellation_policy),
-      deposit:       safe(policies.deposit        || rawProperty.deposit_policy),
-      minAge:        safeN(policies.minimum_age   || rawProperty.minimum_age, 18),
+      checkIn: safe(policies.check_in_time || rawProperty.check_in_time, '14:00'),
+      checkOut: safe(policies.check_out_time || rawProperty.check_out_time, '11:00'),
+      cancellation: safe(policies.cancellation || rawProperty.cancellation_policy),
+      deposit: safe(policies.deposit || rawProperty.deposit_policy),
+      minAge: safeN(policies.minimum_age || rawProperty.minimum_age, 18),
     },
 
     // CM metadata (for outbound reservation POST)
     _cm: {
       channelPropertyId: propertyId,
-      channelCode:       safe(rawProperty.channel_code || rawProperty.source_channel),
-      rateKey:           safe(rawProperty.rate_key || rawProperty.channel_rate_id),
+      channelCode: safe(rawProperty.channel_code || rawProperty.source_channel),
+      rateKey: safe(rawProperty.rate_key || rawProperty.channel_rate_id),
     },
   };
 }
@@ -356,14 +368,14 @@ function applyMarkup(netRate, rawProperty = {}) {
   multiplier = Math.max(MINIMUM_MARKUP_MULTIPLIER, Math.min(MAXIMUM_MARKUP_MULTIPLIER, multiplier));
 
   // Integer-cent arithmetic to prevent float drift
-  const netCents     = Math.round(netRate * 100);
+  const netCents = Math.round(netRate * 100);
   const displayCents = Math.round(netCents * multiplier);
   const displayPrice = parseFloat((displayCents / 100).toFixed(2));
 
   return {
-    displayPrice,                                  // shown to user
-    markup:      parseFloat(multiplier.toFixed(4)), // multiplier used
-    netRateUsed: netRate,                           // what we pay CM (internal)
+    displayPrice, // shown to user
+    markup: parseFloat(multiplier.toFixed(4)), // multiplier used
+    netRateUsed: netRate, // what we pay CM (internal)
   };
 }
 
@@ -406,43 +418,43 @@ function buildBookingPayload(params) {
 
   return {
     // CM API envelope
-    api_version:      '2.1',
-    request_id:       crypto.randomUUID(),
-    channel:          'IMXX_NOMAD',
-    request_type:     'CREATE_RESERVATION',
+    api_version: '2.1',
+    request_id: crypto.randomUUID(),
+    channel: 'IMXX_NOMAD',
+    request_type: 'CREATE_RESERVATION',
 
     // Property & room identifiers (CM's own IDs)
-    property_id:      property._cm.channelPropertyId,
-    channel_code:     property._cm.channelCode,
-    rate_key:         property._cm.rateKey   || roomType.id,
-    room_type_id:     roomType.id,
+    property_id: property._cm.channelPropertyId,
+    channel_code: property._cm.channelCode,
+    rate_key: property._cm.rateKey || roomType.id,
+    room_type_id: roomType.id,
 
     // Stay details
     reservation: {
-      check_in_date:  checkInDate,
+      check_in_date: checkInDate,
       check_out_date: checkOutDate,
       nights,
-      adults:         guests,
-      children:       0,
+      adults: guests,
+      children: 0,
     },
 
     // Guest (pii limited — never send password hash or JWT)
     guest: {
-      first_name:   customer.full_name?.split(' ')[0] || customer.username,
-      last_name:    customer.full_name?.split(' ').slice(1).join(' ') || '',
-      email:        customer.email,
-      phone:        customer.phone || null,
-      nationality:  customer.country || null,
-      language:     'en',
+      first_name: customer.full_name?.split(' ')[0] || customer.username,
+      last_name: customer.full_name?.split(' ').slice(1).join(' ') || '',
+      email: customer.email,
+      phone: customer.phone || null,
+      nationality: customer.country || null,
+      language: 'en',
     },
 
     // Pricing (CM validates net rate integrity)
     pricing: {
-      currency:        property.currency,
+      currency: property.currency,
       net_rate_per_night: roomType.netRatePerNight,
-      total_net:       parseFloat((roomType.netRatePerNight * nights).toFixed(2)),
-      total_sell:      roomType.totalDisplayPrice,
-      markup_applied:  roomType.markupApplied,
+      total_net: parseFloat((roomType.netRatePerNight * nights).toFixed(2)),
+      total_sell: roomType.totalDisplayPrice,
+      markup_applied: roomType.markupApplied,
     },
 
     // IMXX booking reference (their system echoes this back in webhook)
@@ -450,17 +462,17 @@ function buildBookingPayload(params) {
 
     // Payment proof (CM verifies we have collected before confirming)
     payment: {
-      method:           'stripe_payment_intent',
-      stripe_pi_id:     paymentIntentId,
+      method: 'stripe_payment_intent',
+      stripe_pi_id: paymentIntentId,
       amount_collected: roomType.totalDisplayPrice,
-      currency:         property.currency,
+      currency: property.currency,
     },
 
     // Special requests (optional)
     special_requests: {
-      early_check_in:    !!specialRequests.earlyCheckIn,
-      late_check_out:    !!specialRequests.lateCheckOut,
-      notes:             specialRequests.notes || '',
+      early_check_in: !!specialRequests.earlyCheckIn,
+      late_check_out: !!specialRequests.lateCheckOut,
+      notes: specialRequests.notes || '',
     },
   };
 }
@@ -478,7 +490,7 @@ function buildBookingPayload(params) {
  */
 function generateBookingRef() {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const rand  = crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 6);
+  const rand = crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 6);
   return `IMXX-${today}-${rand}`;
 }
 
@@ -494,28 +506,45 @@ function generateBookingRef() {
  * @returns {object} Simulated CM response body
  */
 function simulateCMSearchResponse(searchPayload) {
-  const dest      = searchPayload.search.destination;
-  const nights    = searchPayload.search.nights;
-  const guests    = searchPayload.search.guests.adults;
-  const currency  = searchPayload.search.currency_code;
+  const dest = searchPayload.search.destination;
+  const nights = searchPayload.search.nights;
+  const guests = searchPayload.search.guests.adults;
+  const currency = searchPayload.search.currency_code;
 
   // Simulate slight network delay awareness (caller handles actual delay)
   const properties = [
     {
-      property_id:    'cm-prop-001',
-      property_name:  `The ${dest} Nomad Boutique Hostel`,
-      city:           dest,
-      country:        'Varies',
-      country_code:   'XX',
-      star_rating:    4,
-      currency:       currency,
+      property_id: 'cm-prop-001',
+      property_name: `The ${dest} Nomad Boutique Hostel`,
+      city: dest,
+      country: 'Varies',
+      country_code: 'XX',
+      star_rating: 4,
+      currency: currency,
       cancellation_policy: 'Free cancellation up to 48 hours before check-in',
       images: [
-        { url: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1200', caption: 'Common Lounge', is_hero: true },
-        { url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200', caption: 'Dorm Room' },
-        { url: 'https://images.unsplash.com/photo-1506059612708-99d6c258160e?w=1200', caption: 'Rooftop Terrace' },
+        {
+          url: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1200',
+          caption: 'Common Lounge',
+          is_hero: true,
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200',
+          caption: 'Dorm Room',
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1506059612708-99d6c258160e?w=1200',
+          caption: 'Rooftop Terrace',
+        },
       ],
-      amenities: ['Free Wi-Fi', 'Shared Kitchen', '24/7 Reception', 'Rooftop Terrace', 'Luggage Storage', 'Lockers'],
+      amenities: [
+        'Free Wi-Fi',
+        'Shared Kitchen',
+        '24/7 Reception',
+        'Rooftop Terrace',
+        'Luggage Storage',
+        'Lockers',
+      ],
       rating: { overall: 4.6, count: 312 },
       rating_score: 4.6,
       review_count: 312,
@@ -523,10 +552,11 @@ function simulateCMSearchResponse(searchPayload) {
         {
           id: 'rm-001-dorm-6',
           name: `${guests > 1 ? 'Premium' : 'Standard'} Dorm Bed (6-Bed)`,
-          description: 'Curated shared dorm with privacy curtains, personal reading light, and individual power sockets.',
+          description:
+            'Curated shared dorm with privacy curtains, personal reading light, and individual power sockets.',
           max_occupancy: 1,
           bed_type: 'Single bed in shared room',
-          net_rate: 22.00 + (nights * 0.5),
+          net_rate: 22.0 + nights * 0.5,
           is_available: true,
           cancellation_policy: 'Free cancellation 48h prior',
           meal_plan: 'Room Only',
@@ -535,10 +565,11 @@ function simulateCMSearchResponse(searchPayload) {
         {
           id: 'rm-001-pvt-twin',
           name: 'Private Twin Room',
-          description: 'Cozy private room with two single beds, ensuite bathroom, and city-view window.',
+          description:
+            'Cozy private room with two single beds, ensuite bathroom, and city-view window.',
           max_occupancy: 2,
           bed_type: 'Two single beds',
-          net_rate: 54.00,
+          net_rate: 54.0,
           is_available: true,
           cancellation_policy: 'Free cancellation 48h prior',
           meal_plan: 'Bed & Breakfast',
@@ -546,37 +577,52 @@ function simulateCMSearchResponse(searchPayload) {
         },
       ],
       policies: {
-        check_in_time:  '14:00',
+        check_in_time: '14:00',
         check_out_time: '11:00',
-        minimum_age:    18,
+        minimum_age: 18,
       },
     },
     {
-      property_id:    'cm-prop-002',
-      property_name:  `${dest} Skyline Hostel & Rooftop Bar`,
-      city:           dest,
-      country:        'Varies',
-      country_code:   'XX',
-      star_rating:    4,
-      currency:       currency,
+      property_id: 'cm-prop-002',
+      property_name: `${dest} Skyline Hostel & Rooftop Bar`,
+      city: dest,
+      country: 'Varies',
+      country_code: 'XX',
+      star_rating: 4,
+      currency: currency,
       cancellation_policy: 'Non-refundable',
       images: [
-        { url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200', caption: 'Rooftop Bar', is_hero: true },
-        { url: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1200', caption: 'Suite' },
+        {
+          url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200',
+          caption: 'Rooftop Bar',
+          is_hero: true,
+        },
+        {
+          url: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1200',
+          caption: 'Suite',
+        },
       ],
-      amenities: ['Rooftop Bar', 'Free Wi-Fi', 'Pool Access', 'Airport Shuttle', 'Concierge', 'Spa Access'],
+      amenities: [
+        'Rooftop Bar',
+        'Free Wi-Fi',
+        'Pool Access',
+        'Airport Shuttle',
+        'Concierge',
+        'Spa Access',
+      ],
       rating: { overall: 4.8, count: 187 },
       rating_score: 4.8,
       review_count: 187,
-      imxx_markup_multiplier: 1.15,   // partner-negotiated 15% markup
+      imxx_markup_multiplier: 1.15, // partner-negotiated 15% markup
       room_types: [
         {
           id: 'rm-002-lux-dorm',
           name: 'Luxury Pod Dorm',
-          description: 'Japanese-style sleeping pod with blackout blind, 32" in-pod screen, and USB-C charging.',
+          description:
+            'Japanese-style sleeping pod with blackout blind, 32" in-pod screen, and USB-C charging.',
           max_occupancy: 1,
           bed_type: 'Premium pod',
-          net_rate: 38.00,
+          net_rate: 38.0,
           is_available: true,
           cancellation_policy: 'Non-refundable',
           meal_plan: 'Room Only',
@@ -585,10 +631,11 @@ function simulateCMSearchResponse(searchPayload) {
         {
           id: 'rm-002-suite',
           name: 'Executive Suite',
-          description: 'Full private suite with king bed, rain shower, and panoramic skyline views.',
+          description:
+            'Full private suite with king bed, rain shower, and panoramic skyline views.',
           max_occupancy: 2,
           bed_type: 'King bed',
-          net_rate: 120.00,
+          net_rate: 120.0,
           is_available: guests <= 2,
           cancellation_policy: 'Non-refundable',
           meal_plan: 'Bed & Breakfast',
@@ -596,24 +643,34 @@ function simulateCMSearchResponse(searchPayload) {
         },
       ],
       policies: {
-        check_in_time:  '15:00',
+        check_in_time: '15:00',
         check_out_time: '12:00',
-        minimum_age:    21,
+        minimum_age: 21,
       },
     },
     {
-      property_id:    'cm-prop-003',
-      property_name:  `${dest} Social Hostel & Co-Work`,
-      city:           dest,
-      country:        'Varies',
-      country_code:   'XX',
-      star_rating:    3,
-      currency:       currency,
+      property_id: 'cm-prop-003',
+      property_name: `${dest} Social Hostel & Co-Work`,
+      city: dest,
+      country: 'Varies',
+      country_code: 'XX',
+      star_rating: 3,
+      currency: currency,
       cancellation_policy: 'Free cancellation up to 72 hours before check-in',
       images: [
-        { url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1200', caption: 'Co-Working Space', is_hero: true },
+        {
+          url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1200',
+          caption: 'Co-Working Space',
+          is_hero: true,
+        },
       ],
-      amenities: ['Co-Working Space', 'Free Wi-Fi 500Mbps', 'Meeting Rooms', 'Espresso Bar', 'Events Program'],
+      amenities: [
+        'Co-Working Space',
+        'Free Wi-Fi 500Mbps',
+        'Meeting Rooms',
+        'Espresso Bar',
+        'Events Program',
+      ],
       rating: { overall: 4.4, count: 529 },
       review_count: 529,
       room_types: [
@@ -623,7 +680,7 @@ function simulateCMSearchResponse(searchPayload) {
           description: 'Friendly mixed dorm for budget travellers, clean and centrally located.',
           max_occupancy: 1,
           bed_type: 'Single bed in shared room',
-          net_rate: 16.50,
+          net_rate: 16.5,
           is_available: true,
           cancellation_policy: 'Free cancellation 72h prior',
           meal_plan: 'Room Only',
@@ -635,7 +692,7 @@ function simulateCMSearchResponse(searchPayload) {
           description: 'Secure female-only dorm with private bathroom and vanity mirror area.',
           max_occupancy: 1,
           bed_type: 'Single bed in female-only room',
-          net_rate: 21.00,
+          net_rate: 21.0,
           is_available: true,
           cancellation_policy: 'Free cancellation 72h prior',
           meal_plan: 'Room Only',
@@ -643,19 +700,19 @@ function simulateCMSearchResponse(searchPayload) {
         },
       ],
       policies: {
-        check_in_time:  '13:00',
+        check_in_time: '13:00',
         check_out_time: '10:00',
-        minimum_age:    18,
+        minimum_age: 18,
       },
     },
   ];
 
   return {
-    status:      'success',
-    request_id:  searchPayload.request_id,
+    status: 'success',
+    request_id: searchPayload.request_id,
     destination: dest,
-    results:     properties.length,
-    currency:    currency,
+    results: properties.length,
+    currency: currency,
     properties,
   };
 }
@@ -679,37 +736,31 @@ function simulateCMSearchResponse(searchPayload) {
  * @returns {object} ledger-ready commission record
  */
 function buildCommissionRecord(params) {
-  const {
-    nativeProperty,
-    roomType,
-    nights,
-    imxxBookingRef,
-    cmConfirmationId,
-    hostelOwnerId,
-  } = params;
+  const { nativeProperty, roomType, nights, imxxBookingRef, cmConfirmationId, hostelOwnerId } =
+    params;
 
   const totalSell = parseFloat((roomType.displayPricePerNight * nights).toFixed(2));
-  const totalNet  = parseFloat((roomType.netRatePerNight      * nights).toFixed(2));
+  const totalNet = parseFloat((roomType.netRatePerNight * nights).toFixed(2));
   const commission = parseFloat((totalSell - totalNet).toFixed(2));
 
   return {
-    booking_ref:          imxxBookingRef,
-    cm_confirmation_id:   cmConfirmationId,
-    hostel_owner_id:      hostelOwnerId,
-    property_id:          nativeProperty.externalId,
-    property_name:        nativeProperty.name,
-    room_type_id:         roomType.id,
-    room_type_name:       roomType.name,
+    booking_ref: imxxBookingRef,
+    cm_confirmation_id: cmConfirmationId,
+    hostel_owner_id: hostelOwnerId,
+    property_id: nativeProperty.externalId,
+    property_name: nativeProperty.name,
+    room_type_id: roomType.id,
+    room_type_name: roomType.name,
     nights,
-    net_rate_per_night:   roomType.netRatePerNight,
+    net_rate_per_night: roomType.netRatePerNight,
     sell_price_per_night: roomType.displayPricePerNight,
-    total_sell:           totalSell,
+    total_sell: totalSell,
     total_net_owed_to_cm: totalNet,
     imxx_gross_commission: commission,
-    markup_multiplier:    roomType.markupApplied,
-    payout_cycle:         'monthly',
-    commission_status:    'accruing',   // → 'paid' at monthly cycle close
-    recorded_at:          new Date().toISOString(),
+    markup_multiplier: roomType.markupApplied,
+    payout_cycle: 'monthly',
+    commission_status: 'accruing', // → 'paid' at monthly cycle close
+    recorded_at: new Date().toISOString(),
   };
 }
 

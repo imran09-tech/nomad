@@ -51,7 +51,9 @@ function assertPositiveFinite(value, label) {
     throw new TypeError(`[PaymentSplitter] '${label}' must be a finite number. Received: ${value}`);
   }
   if (value <= 0) {
-    throw new RangeError(`[PaymentSplitter] '${label}' must be greater than zero. Received: ${value}`);
+    throw new RangeError(
+      `[PaymentSplitter] '${label}' must be greater than zero. Received: ${value}`
+    );
   }
 }
 
@@ -62,12 +64,14 @@ function assertPositiveFinite(value, label) {
  */
 function assertValidCommissionRate(rate) {
   if (typeof rate !== 'number' || !isFinite(rate)) {
-    throw new TypeError(`[PaymentSplitter] 'commissionRate' must be a finite number. Received: ${rate}`);
+    throw new TypeError(
+      `[PaymentSplitter] 'commissionRate' must be a finite number. Received: ${rate}`
+    );
   }
   if (rate <= 0 || rate > 1) {
     throw new RangeError(
       `[PaymentSplitter] 'commissionRate' must be between 0 (exclusive) and 1 (inclusive). ` +
-      `Received: ${rate}. Example: pass 0.10 for a 10% platform cut.`
+        `Received: ${rate}. Example: pass 0.10 for a 10% platform cut.`
     );
   }
 }
@@ -121,13 +125,13 @@ function calculateSplitPayment(bookingTotal, commissionRate) {
   assertValidCommissionRate(commissionRate);
 
   // ── Integer Cent Arithmetic ───────────────────────────────────────────────
-  const totalCents      = toCents(bookingTotal);
+  const totalCents = toCents(bookingTotal);
   const commissionCents = Math.round(totalCents * commissionRate); // rounds half-up
-  const payoutCents     = totalCents - commissionCents;            // exact remainder
+  const payoutCents = totalCents - commissionCents; // exact remainder
 
   // ── Convert back to dollars ───────────────────────────────────────────────
   const platformCommission = fromCents(commissionCents);
-  const vendorPayout       = fromCents(payoutCents);
+  const vendorPayout = fromCents(payoutCents);
 
   // ── Sanity check (should never fail due to integer math, but defensive) ───
   const resum = toCents(platformCommission) + toCents(vendorPayout);
@@ -135,17 +139,17 @@ function calculateSplitPayment(bookingTotal, commissionRate) {
     // In production, surface this to an error monitoring service (Sentry etc.)
     console.error(
       `[PaymentSplitter CRITICAL] Split does not sum to total! ` +
-      `Expected ${totalCents}¢, got ${resum}¢.`
+        `Expected ${totalCents}¢, got ${resum}¢.`
     );
   }
 
   return {
-    bookingTotal:          parseFloat(bookingTotal.toFixed(2)),
+    bookingTotal: parseFloat(bookingTotal.toFixed(2)),
     commissionRate,
     platformCommission,
     vendorPayout,
     platformCommissionPct: `${(commissionRate * 100).toFixed(2)}%`,
-    calculatedAt:          new Date().toISOString(),
+    calculatedAt: new Date().toISOString(),
   };
 }
 
@@ -181,17 +185,23 @@ function formatCurrency(amount, currencyCode = 'USD') {
  * @param {string} [params.status='pending']
  * @returns {object}
  */
-function buildLedgerEntry({ bookingId, hostelOwnerId, split, payoutReference, status = 'pending' }) {
+function buildLedgerEntry({
+  bookingId,
+  hostelOwnerId,
+  split,
+  payoutReference,
+  status = 'pending',
+}) {
   return {
-    booking_id:           bookingId,
-    hostel_owner_id:      hostelOwnerId,
-    booking_total:        split.bookingTotal,
-    commission_rate:      split.commissionRate,
-    commission_amount:    split.platformCommission,
+    booking_id: bookingId,
+    hostel_owner_id: hostelOwnerId,
+    booking_total: split.bookingTotal,
+    commission_rate: split.commissionRate,
+    commission_amount: split.platformCommission,
     vendor_payout_amount: split.vendorPayout,
-    payout_status:        status,
-    payout_reference:     payoutReference || null,
-    created_at:           split.calculatedAt,
+    payout_status: status,
+    payout_reference: payoutReference || null,
+    created_at: split.calculatedAt,
   };
 }
 
@@ -200,6 +210,6 @@ module.exports = {
   formatCurrency,
   buildLedgerEntry,
   // Expose internals for unit testing
-  _toCents:   toCents,
+  _toCents: toCents,
   _fromCents: fromCents,
 };

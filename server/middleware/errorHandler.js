@@ -35,7 +35,7 @@ function classifyError(err) {
   if (err.type && err.type.startsWith('Stripe')) {
     switch (err.type) {
       case 'StripeCardError':
-        return { status: 402, message: err.message };          // safe to expose
+        return { status: 402, message: err.message }; // safe to expose
       case 'StripeRateLimitError':
         return { status: 429, message: 'Payment service busy. Please retry shortly.' };
       case 'StripeInvalidRequestError':
@@ -80,10 +80,10 @@ function classifyError(err) {
 
   // ── Default: generic 500 ──────────────────────────────────────────────────
   return {
-    status:  500,
+    status: 500,
     message: IS_PROD
       ? 'An internal server error occurred. Please try again later.'
-      : (err.message || 'Unknown server error'),
+      : err.message || 'Unknown server error',
   };
 }
 
@@ -96,11 +96,11 @@ const globalErrorHandler = (err, req, res, next) => {
   // Always log the full error server-side (switch to a logger like winston/pino in prod)
   console.error('[ERROR]', {
     timestamp: new Date().toISOString(),
-    method:    req.method,
-    url:       req.originalUrl,
-    ip:        req.ip,
-    message:   err.message,
-    stack:     IS_PROD ? '(suppressed in prod)' : err.stack,
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+    message: err.message,
+    stack: IS_PROD ? '(suppressed in prod)' : err.stack,
   });
 
   const { status, message, details } = classifyError(err);
@@ -124,7 +124,7 @@ const globalErrorHandler = (err, req, res, next) => {
  *
  * This eliminates every try/catch boilerplate in route handlers.
  */
-const asyncHandler = fn => (req, res, next) => {
+const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
@@ -134,7 +134,7 @@ const asyncHandler = fn => (req, res, next) => {
  */
 const createError = (message, statusCode = 400) => {
   const err = new Error(message);
-  err.statusCode   = statusCode;
+  err.statusCode = statusCode;
   err.isOperational = true;
   return err;
 };

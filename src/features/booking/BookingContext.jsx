@@ -19,47 +19,49 @@ export const BookingProvider = ({ children }) => {
       guestTitle: 'Mr',
       contactNumber: '',
       specialRequests: '',
-      paymentMethod: ''
-    }
+      paymentMethod: '',
+    },
   });
 
   const openBookingWizard = (item) => {
-    setBookingState(prev => ({
+    setBookingState((prev) => ({
       ...prev,
       isOpen: true,
       currentStep: 1,
-      selectedItem: item
+      selectedItem: item,
     }));
   };
 
   const closeBookingWizard = () => {
-    setBookingState(prev => ({ ...prev, isOpen: false }));
+    setBookingState((prev) => ({ ...prev, isOpen: false }));
   };
 
   const nextStep = () => {
-    setBookingState(prev => ({ ...prev, currentStep: Math.min(prev.currentStep + 1, 6) }));
+    setBookingState((prev) => ({ ...prev, currentStep: Math.min(prev.currentStep + 1, 6) }));
   };
 
   const prevStep = () => {
-    setBookingState(prev => ({ ...prev, currentStep: Math.max(prev.currentStep - 1, 1) }));
+    setBookingState((prev) => ({ ...prev, currentStep: Math.max(prev.currentStep - 1, 1) }));
   };
 
   const updateDetails = (key, value) => {
-    setBookingState(prev => ({
+    setBookingState((prev) => ({
       ...prev,
-      details: { ...prev.details, [key]: value }
+      details: { ...prev.details, [key]: value },
     }));
   };
 
   return (
-    <BookingContext.Provider value={{
-      bookingState,
-      openBookingWizard,
-      closeBookingWizard,
-      nextStep,
-      prevStep,
-      updateDetails
-    }}>
+    <BookingContext.Provider
+      value={{
+        bookingState,
+        openBookingWizard,
+        closeBookingWizard,
+        nextStep,
+        prevStep,
+        updateDetails,
+      }}
+    >
       {children}
     </BookingContext.Provider>
   );

@@ -7,11 +7,11 @@ export default function AIFloatingOrb() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      sender: 'ai', 
-      text: "Welcome to IMXX Premium. I am your AI Travel Concierge. How may I elevate your travel arrangements today?" 
-    }
+    {
+      id: 1,
+      sender: 'ai',
+      text: 'Welcome to IMXX Premium. I am your AI Travel Concierge. How may I elevate your travel arrangements today?',
+    },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -19,13 +19,13 @@ export default function AIFloatingOrb() {
   const nextId = useRef(2);
 
   const quickPrompts = [
-    { text: "🇯🇵 Plan Tokyo Odyssey", query: "Plan a luxury 5-day itinerary for Tokyo" },
-    { text: "🚄 Track Train PNR", query: "Check train PNR 2737161856" },
-    { text: "🏨 Search Bali Villas", query: "Find the most exclusive luxury villas in Bali" },
+    { text: '🇯🇵 Plan Tokyo Odyssey', query: 'Plan a luxury 5-day itinerary for Tokyo' },
+    { text: '🚄 Track Train PNR', query: 'Check train PNR 2737161856' },
+    { text: '🏨 Search Bali Villas', query: 'Find the most exclusive luxury villas in Bali' },
   ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -38,30 +38,38 @@ export default function AIFloatingOrb() {
     if (!textToSend.trim()) return;
 
     const newUserMessage = { id: nextId.current++, sender: 'user', text: textToSend };
-    setMessages(prev => [...prev, newUserMessage]);
+    setMessages((prev) => [...prev, newUserMessage]);
     setIsTyping(true);
 
     const queryLower = textToSend.toLowerCase();
 
     // Simulate luxury AI response with custom delay
     setTimeout(() => {
-      let responseText = "IMXX Intelligence system is processing your inquiry. I can assist with booking flights, checking train telemetry, recommending curated stays, or crafting bespoke itineraries. Let me know how you would like to proceed.";
+      let responseText =
+        'IMXX Intelligence system is processing your inquiry. I can assist with booking flights, checking train telemetry, recommending curated stays, or crafting bespoke itineraries. Let me know how you would like to proceed.';
 
-      if (queryLower.includes("tokyo") || queryLower.includes("japan")) {
-        responseText = "Bespoke Tokyo Odyssey compiled successfully. We have reserved the Deluxe Suite at Aman Tokyo, arranged a private helicopter transfer over Mt. Fuji, and secured a VIP dining table at Den. We've also queued Shinkansen First Class (Gran Class) tickets to Kyoto. Would you like to sync this with your planner?";
-      } else if (queryLower.includes("pnr") || queryLower.includes("train")) {
-        responseText = "Querying live rail telemetry... Train PNR 2737161856: Rajdhani Express is running on-schedule, currently traveling at 120 km/h. AC First Class Coach H1 is confirmed, approaching next station. Your boarding credentials have been updated in your travel wallet.";
-      } else if (queryLower.includes("bali") || queryLower.includes("villa") || queryLower.includes("resort")) {
-        responseText = "Retrieving IMXX Curated Portfolio: Mandapa, a Ritz-Carlton Reserve (River Front Pool Villa) and Bulgari Resort Bali (Ocean View Cliff Villa) are available with exclusive 15% platinum member upgrades. Private yacht charters from Denpasar are fully clear for booking.";
+      if (queryLower.includes('tokyo') || queryLower.includes('japan')) {
+        responseText =
+          "Bespoke Tokyo Odyssey compiled successfully. We have reserved the Deluxe Suite at Aman Tokyo, arranged a private helicopter transfer over Mt. Fuji, and secured a VIP dining table at Den. We've also queued Shinkansen First Class (Gran Class) tickets to Kyoto. Would you like to sync this with your planner?";
+      } else if (queryLower.includes('pnr') || queryLower.includes('train')) {
+        responseText =
+          'Querying live rail telemetry... Train PNR 2737161856: Rajdhani Express is running on-schedule, currently traveling at 120 km/h. AC First Class Coach H1 is confirmed, approaching next station. Your boarding credentials have been updated in your travel wallet.';
+      } else if (
+        queryLower.includes('bali') ||
+        queryLower.includes('villa') ||
+        queryLower.includes('resort')
+      ) {
+        responseText =
+          'Retrieving IMXX Curated Portfolio: Mandapa, a Ritz-Carlton Reserve (River Front Pool Villa) and Bulgari Resort Bali (Ocean View Cliff Villa) are available with exclusive 15% platinum member upgrades. Private yacht charters from Denpasar are fully clear for booking.';
       }
 
       const newAiMessage = {
         id: nextId.current++,
         sender: 'ai',
-        text: responseText
+        text: responseText,
       };
 
-      setMessages(prev => [...prev, newAiMessage]);
+      setMessages((prev) => [...prev, newAiMessage]);
       setIsTyping(false);
     }, 1200);
   };
@@ -76,11 +84,11 @@ export default function AIFloatingOrb() {
 
   const handleReset = () => {
     setMessages([
-      { 
-        id: nextId.current++, 
-        sender: 'ai', 
-        text: "System cache cleared. I am your AI Travel Concierge. How may I assist you with your luxury travel arrangements today?" 
-      }
+      {
+        id: nextId.current++,
+        sender: 'ai',
+        text: 'System cache cleared. I am your AI Travel Concierge. How may I assist you with your luxury travel arrangements today?',
+      },
     ]);
   };
 
@@ -109,21 +117,25 @@ export default function AIFloatingOrb() {
                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#080c14] rounded-full animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-white font-black text-sm tracking-wide leading-none">IMXX Intelligence</h3>
-                  <div className="text-[9px] text-emerald-400 font-mono tracking-widest uppercase mt-0.5">Active Neural Link</div>
+                  <h3 className="text-white font-black text-sm tracking-wide leading-none">
+                    IMXX Intelligence
+                  </h3>
+                  <div className="text-[9px] text-emerald-400 font-mono tracking-widest uppercase mt-0.5">
+                    Active Neural Link
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex items-center space-x-3">
-                <button 
+                <button
                   onClick={handleReset}
                   title="Reset Chat"
                   className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-900/40 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setIsOpen(false);
                     navigate('/contact');
@@ -133,7 +145,7 @@ export default function AIFloatingOrb() {
                 >
                   <Maximize2 className="w-3.5 h-3.5" />
                 </button>
-                <button 
+                <button
                   onClick={() => setIsOpen(false)}
                   title="Close Panel"
                   className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg bg-slate-900/40 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
@@ -144,47 +156,75 @@ export default function AIFloatingOrb() {
             </div>
 
             {/* Chat Messages */}
-            <div 
+            <div
               className="flex-1 overflow-y-auto p-5 space-y-4 relative z-10"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`flex max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}>
-                    
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`flex max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}
+                  >
                     {/* Avatar */}
-                    <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center mb-0.5
-                      ${msg.sender === 'user' 
-                        ? 'bg-slate-800 ml-2.5' 
-                        : 'bg-gradient-to-br from-amber-200 to-amber-500 mr-2.5 shadow-[0_0_10px_rgba(245,158,11,0.25)]'}`}
+                    <div
+                      className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center mb-0.5
+                      ${
+                        msg.sender === 'user'
+                          ? 'bg-slate-800 ml-2.5'
+                          : 'bg-gradient-to-br from-amber-200 to-amber-500 mr-2.5 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                      }`}
                     >
-                      {msg.sender === 'user' ? <User className="w-3.5 h-3.5 text-slate-400" /> : <Bot className="w-3.5 h-3.5 text-black" />}
+                      {msg.sender === 'user' ? (
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                      ) : (
+                        <Bot className="w-3.5 h-3.5 text-black" />
+                      )}
                     </div>
 
                     {/* Bubble */}
-                    <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed font-medium
-                      ${msg.sender === 'user' 
-                        ? 'bg-[#121826] border-slate-800 text-white rounded-br-sm shadow-md' 
-                        : 'bg-slate-950/60 border-slate-800/80 text-slate-200 rounded-bl-sm backdrop-blur-md shadow-sm'}`}
+                    <div
+                      className={`p-3.5 rounded-2xl border text-xs leading-relaxed font-medium
+                      ${
+                        msg.sender === 'user'
+                          ? 'bg-[#121826] border-slate-800 text-white rounded-br-sm shadow-md'
+                          : 'bg-slate-950/60 border-slate-800/80 text-slate-200 rounded-bl-sm backdrop-blur-md shadow-sm'
+                      }`}
                     >
                       <p>{msg.text}</p>
                     </div>
-
                   </div>
                 </div>
               ))}
-              
+
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="flex max-w-[80%] flex-row items-end">
                     <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center mb-0.5 bg-gradient-to-br from-amber-200 to-amber-500 mr-2.5 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
-                      <Sparkles className="w-3 h-3 text-black animate-spin" style={{ animationDuration: '3s' }} />
+                      <Sparkles
+                        className="w-3 h-3 text-black animate-spin"
+                        style={{ animationDuration: '3s' }}
+                      />
                     </div>
                     <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 rounded-bl-sm backdrop-blur-md flex space-x-1.5 items-center h-[38px] shadow-sm">
-                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }} className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }} className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                        className="w-1.5 h-1.5 bg-amber-500 rounded-full"
+                      />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }}
+                        className="w-1.5 h-1.5 bg-amber-500 rounded-full"
+                      />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }}
+                        className="w-1.5 h-1.5 bg-amber-500 rounded-full"
+                      />
                     </div>
                   </div>
                 </div>
@@ -194,7 +234,10 @@ export default function AIFloatingOrb() {
 
             {/* Suggestions Quick Prompts */}
             <div className="px-5 pb-1 relative z-10">
-              <div className="flex space-x-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div
+                className="flex space-x-2 overflow-x-auto pb-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {quickPrompts.map((prompt) => (
                   <button
                     key={prompt.text}
@@ -210,14 +253,14 @@ export default function AIFloatingOrb() {
             {/* Input Bar */}
             <div className="p-4 bg-[#020408]/85 backdrop-blur-md border-t border-slate-800/60 relative z-10">
               <form onSubmit={onSubmit} className="relative flex items-center">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask about flights, PNRs, villas..." 
+                  placeholder="Ask about flights, PNRs, villas..."
                   className="w-full bg-[#121826] border border-slate-800 focus:border-amber-500/50 text-white text-xs rounded-xl pl-4 pr-12 py-3.5 focus:outline-none transition-colors"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={!inputValue.trim()}
                   className="absolute right-1.5 w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-all cursor-pointer"
@@ -231,7 +274,7 @@ export default function AIFloatingOrb() {
       </AnimatePresence>
 
       {/* Floating Trigger Orb */}
-      <motion.div 
+      <motion.div
         onClick={() => setIsOpen(!isOpen)}
         className="pointer-events-auto cursor-pointer"
         whileHover={{ scale: 1.05 }}
@@ -239,17 +282,17 @@ export default function AIFloatingOrb() {
       >
         <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
           {/* Glowing Auroras */}
-          <motion.div 
+          <motion.div
             animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
             className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-full opacity-55 blur-xl pointer-events-none"
           />
-          <motion.div 
+          <motion.div
             animate={{ rotate: -360, scale: [1, 1.1, 1] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
             className="absolute inset-2 bg-gradient-to-tr from-amber-400 to-pink-500 rounded-full opacity-75 blur-md pointer-events-none"
           />
-          
+
           {/* Core Orb */}
           <div className="relative z-10 w-12 h-12 md:w-14 md:h-14 bg-[#080c14] border border-white/20 rounded-full shadow-2xl flex items-center justify-center backdrop-blur-xl">
             {isOpen ? (

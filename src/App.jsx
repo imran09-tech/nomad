@@ -36,12 +36,12 @@ export default function App() {
       <div className="bg-[#020408] min-h-screen text-white font-sans overflow-x-hidden selection:bg-amber-500/30 selection:text-amber-200 flex">
         {/* Desktop Sidebar */}
         <GlassSidebar />
-        
+
         {/* Main Content Area (shifted on desktop, normal on mobile) */}
         <main className="relative z-10 flex-1 md:pl-24 pb-20 md:pb-0 min-h-screen w-full">
           <AnimatedRoutes />
         </main>
-        
+
         {/* Mobile Bottom Navigation */}
         <BottomNavBar />
 

@@ -34,9 +34,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 // File validation logic
@@ -54,7 +54,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB Limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Limit
 });
 
 /**
@@ -78,9 +78,19 @@ function sanitize(str) {
  */
 const createBooking = asyncHandler(async (req, res) => {
   const {
-    itemName, totalPrice, paymentIntentId, utr,
-    destinationId, checkIn, checkOut, guests,
-    guestName, guestEmail, guestPhone, specialRequests, addons,
+    itemName,
+    totalPrice,
+    paymentIntentId,
+    utr,
+    destinationId,
+    checkIn,
+    checkOut,
+    guests,
+    guestName,
+    guestEmail,
+    guestPhone,
+    specialRequests,
+    addons,
   } = req.body;
 
   const transactionRef = paymentIntentId || utr;
@@ -99,11 +109,11 @@ const createBooking = asyncHandler(async (req, res) => {
       sanitize(transactionRef),
       status,
       destinationId || null,
-      checkIn  || null,
+      checkIn || null,
       checkOut || null,
-      guests   || 1,
-      sanitize(guestName  || req.user.fullName || ''),
-      sanitize(guestEmail || req.user.email    || ''),
+      guests || 1,
+      sanitize(guestName || req.user.fullName || ''),
+      sanitize(guestEmail || req.user.email || ''),
       sanitize(guestPhone || ''),
       sanitize(specialRequests || ''),
       addons ? JSON.stringify(addons) : null,
@@ -114,8 +124,8 @@ const createBooking = asyncHandler(async (req, res) => {
   const bookingRef = `IMXX-${String(result.lastID).padStart(6, '0')}`;
 
   res.status(201).json({
-    success:   true,
-    message:   'Booking created successfully.',
+    success: true,
+    message: 'Booking created successfully.',
     bookingId: result.lastID,
     bookingRef,
   });
@@ -136,9 +146,9 @@ const getUserBookings = asyncHandler(async (req, res) => {
   );
 
   // Parse addons JSON safely
-  const formatted = bookings.map(b => ({
+  const formatted = bookings.map((b) => ({
     ...b,
-    addons:    safeJson(b.addons),
+    addons: safeJson(b.addons),
     bookingRef: `IMXX-${String(b.id).padStart(6, '0')}`,
   }));
 
@@ -168,7 +178,7 @@ const getBookingById = asyncHandler(async (req, res) => {
     success: true,
     data: {
       ...booking,
-      addons:     safeJson(booking.addons),
+      addons: safeJson(booking.addons),
       bookingRef: `IMXX-${String(booking.id).padStart(6, '0')}`,
     },
   });
@@ -184,7 +194,10 @@ const updateGuestInfo = asyncHandler(async (req, res) => {
   if (isNaN(bookingId)) throw createError('Invalid booking ID.', 400);
 
   const userId = req.user ? req.user.id : 0;
-  const booking = await dbGet('SELECT * FROM bookings WHERE id = ? AND user_id = ?', [bookingId, userId]);
+  const booking = await dbGet('SELECT * FROM bookings WHERE id = ? AND user_id = ?', [
+    bookingId,
+    userId,
+  ]);
   if (!booking) throw createError('Booking not found.', 404);
   if (!['pending', 'pending_utr', 'draft'].includes(booking.status)) {
     throw createError('Cannot modify a booking that has already been confirmed or completed.', 400);
@@ -217,8 +230,18 @@ const updateGuestInfo = asyncHandler(async (req, res) => {
  */
 const createDirectTransferBooking = asyncHandler(async (req, res) => {
   const {
-    itemName, totalPrice, utr, destinationId, checkIn, checkOut, guests,
-    guestName, guestEmail, guestPhone, specialRequests, addons
+    itemName,
+    totalPrice,
+    utr,
+    destinationId,
+    checkIn,
+    checkOut,
+    guests,
+    guestName,
+    guestEmail,
+    guestPhone,
+    specialRequests,
+    addons,
   } = req.body;
 
   const finalUtr = utr || 'P2P_SCREENSHOT';
@@ -243,7 +266,7 @@ const createDirectTransferBooking = asyncHandler(async (req, res) => {
       sanitize(guestEmail || req.user?.email || ''),
       sanitize(guestPhone || ''),
       sanitize(specialRequests || ''),
-      addons ? JSON.stringify(addons) : null
+      addons ? JSON.stringify(addons) : null,
     ]
   );
 
@@ -253,7 +276,7 @@ const createDirectTransferBooking = asyncHandler(async (req, res) => {
     success: true,
     message: 'Direct transfer proof submitted successfully. Pending verification.',
     bookingId: result.lastID,
-    bookingRef
+    bookingRef,
   });
 });
 
@@ -270,10 +293,10 @@ const getAdminBookings = asyncHandler(async (req, res) => {
      ORDER BY b.created_at DESC`
   );
 
-  const formatted = bookings.map(b => ({
+  const formatted = bookings.map((b) => ({
     ...b,
     addons: safeJson(b.addons),
-    bookingRef: `IMXX-${String(b.id).padStart(6, '0')}`
+    bookingRef: `IMXX-${String(b.id).padStart(6, '0')}`,
   }));
 
   res.json({ success: true, data: formatted });
@@ -302,7 +325,7 @@ const verifyBookingPayment = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: `Booking ${bookingId} has been successfully updated to status: ${newStatus}.`
+    message: `Booking ${bookingId} has been successfully updated to status: ${newStatus}.`,
   });
 });
 
@@ -339,9 +362,9 @@ const uploadScreenshot = [
       message: 'Screenshot uploaded. Status set to AWAITING_CONFIRMATION.',
       screenshotPath: relativeUrl,
       paymentMessage,
-      screenshotUploadedAt: nowTimestamp
+      screenshotUploadedAt: nowTimestamp,
     });
-  })
+  }),
 ];
 
 /**
@@ -352,7 +375,10 @@ const getBookingStatus = asyncHandler(async (req, res) => {
   const bookingId = parseInt(req.params.id, 10);
   if (isNaN(bookingId)) throw createError('Invalid booking ID.', 400);
 
-  const booking = await dbGet('SELECT status, item_name, total_price, screenshot_path, payment_message, screenshot_uploaded_at FROM bookings WHERE id = ?', [bookingId]);
+  const booking = await dbGet(
+    'SELECT status, item_name, total_price, screenshot_path, payment_message, screenshot_uploaded_at FROM bookings WHERE id = ?',
+    [bookingId]
+  );
   if (!booking) throw createError('Booking not found.', 404);
 
   res.json({
@@ -362,14 +388,18 @@ const getBookingStatus = asyncHandler(async (req, res) => {
     totalPrice: booking.total_price,
     screenshotPath: booking.screenshot_path,
     paymentMessage: booking.payment_message,
-    screenshotUploadedAt: booking.screenshot_uploaded_at
+    screenshotUploadedAt: booking.screenshot_uploaded_at,
   });
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function safeJson(str) {
   if (!str) return null;
-  try { return JSON.parse(str); } catch { return str; }
+  try {
+    return JSON.parse(str);
+  } catch {
+    return str;
+  }
 }
 
 module.exports = {
@@ -381,5 +411,5 @@ module.exports = {
   getAdminBookings,
   verifyBookingPayment,
   uploadScreenshot,
-  getBookingStatus
+  getBookingStatus,
 };

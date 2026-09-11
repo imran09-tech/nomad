@@ -12,18 +12,18 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const stripe           = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { dbGet, dbRun } = require('../config/database');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 const { getTransitPriceServerSide } = require('./transitController');
-const nodemailer       = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 // ── Email transporter (Nodemailer + SMTP / SendGrid) ─────────────────────────
 let mailer = null;
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   mailer = nodemailer.createTransport({
-    host:   process.env.SMTP_HOST,
-    port:   Number(process.env.SMTP_PORT) || 587,
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: {
       user: process.env.SMTP_USER,
@@ -38,10 +38,18 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
 /**
  * Build a dark-themed HTML email for booking confirmation.
  */
-function buildConfirmationEmail({ guestName, guestEmail, bookingRef, destinationName, checkIn, checkOut, totalUsd }) {
+function buildConfirmationEmail({
+  guestName,
+  guestEmail,
+  bookingRef,
+  destinationName,
+  checkIn,
+  checkOut,
+  totalUsd,
+}) {
   return {
-    from:    `"IMXX Premium" <${process.env.SMTP_USER || 'noreply@imxx.com'}>`,
-    to:      guestEmail,
+    from: `"IMXX Premium" <${process.env.SMTP_USER || 'noreply@imxx.com'}>`,
+    to: guestEmail,
     subject: `✅ Booking Confirmed — ${destinationName}`,
     html: `
 <!DOCTYPE html>
@@ -106,15 +114,17 @@ function buildConfirmationEmail({ guestName, guestEmail, bookingRef, destination
 
 // ── ADDON PRICING (server-side, never from client) ────────────────────────────
 const ADDON_PRICES = {
-  flight:      299,   // USD
-  food_bundle:  89,
-  events:      149,
+  flight: 299, // USD
+  food_bundle: 89,
+  events: 149,
 };
 
 // ── Compute nightly rate from destination price string ────────────────────────
 function parseDestinationPrice(priceStr) {
   if (!priceStr) return 0;
-  const match = String(priceStr).replace(/,/g, '').match(/[\d.]+/);
+  const match = String(priceStr)
+    .replace(/,/g, '')
+    .match(/[\d.]+/);
   return match ? parseFloat(match[0]) : 0;
 }
 
@@ -126,7 +136,6 @@ function nightsBetween(checkIn, checkOut) {
   return diff > 0 ? diff : 1;
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/create-payment-intent
 //  ► Price computed server-side from DB — client CANNOT inject price.
@@ -136,7 +145,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
 
   // 1. Validate dates are in the future and logical
   const now = new Date();
-  const checkInDate  = new Date(checkIn);
+  const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
   if (checkInDate < now) throw createError('Check-in date cannot be in the past.', 400);
   if (checkOutDate <= checkInDate) throw createError('Check-out must be after check-in.', 400);
@@ -148,7 +157,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   const basePrice = parseDestinationPrice(destination.price);
   if (basePrice <= 0) throw createError('Pricing unavailable for this destination.', 400);
 
-  const nights  = nightsBetween(checkIn, checkOut);
+  const nights = nightsBetween(checkIn, checkOut);
   const perNight = basePrice; // stored as per-person/per-night figure
 
   // 3. Compute total (server-side only)
@@ -164,19 +173,19 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   if (transitId) {
     transitPrice = getTransitPriceServerSide(transitId);
     if (!transitPrice) throw createError('Selected transit route is unavailable or invalid.', 400);
-    total += (transitPrice * Math.max(1, guests));
+    total += transitPrice * Math.max(1, guests);
   }
 
   // 5. Add processing fee (2.9% + $0.30 to cover Stripe)
-  const stripeFee   = Math.round(total * 0.029 * 100) / 100 + 0.30;
-  const grandTotal  = parseFloat((total + stripeFee).toFixed(2));
+  const stripeFee = Math.round(total * 0.029 * 100) / 100 + 0.3;
+  const grandTotal = parseFloat((total + stripeFee).toFixed(2));
   const amountCents = Math.round(grandTotal * 100);
 
   if (amountCents < 50) throw createError('Minimum payment amount is $0.50.', 400);
 
   // 6. Create Stripe PaymentIntent
   const paymentIntent = await stripe.paymentIntents.create({
-    amount:   amountCents,
+    amount: amountCents,
     currency: 'usd',
     automatic_payment_methods: { enabled: true },
     metadata: {
@@ -192,21 +201,20 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   });
 
   res.json({
-    success:      true,
+    success: true,
     clientSecret: paymentIntent.client_secret,
     breakdown: {
-      basePrice:    perNight,
+      basePrice: perNight,
       nights,
       guests,
-      subtotal:     parseFloat((perNight * nights * guests).toFixed(2)),
-      addons:       addons.reduce((acc, a) => ({ ...acc, [a]: ADDON_PRICES[a] || 0 }), {}),
+      subtotal: parseFloat((perNight * nights * guests).toFixed(2)),
+      addons: addons.reduce((acc, a) => ({ ...acc, [a]: ADDON_PRICES[a] || 0 }), {}),
       transitTotal: transitPrice ? parseFloat((transitPrice * guests).toFixed(2)) : 0,
-      stripeFee:    parseFloat(stripeFee.toFixed(2)),
+      stripeFee: parseFloat(stripeFee.toFixed(2)),
       grandTotal,
     },
   });
 });
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/bookings/checkout-success  (Stripe Webhook)
@@ -218,7 +226,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
 //  ④ Email dispatched only after DB confirms update
 // ─────────────────────────────────────────────────────────────────────────────
 const stripeWebhook = async (req, res) => {
-  const sig           = req.headers['stripe-signature'];
+  const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   // ① Signature verification
@@ -228,18 +236,20 @@ const stripeWebhook = async (req, res) => {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (sigErr) {
       console.warn('[Webhook] Signature verification failed:', sigErr.message);
-      return res.status(400).json({ error: `Webhook signature verification failed: ${sigErr.message}` });
+      return res
+        .status(400)
+        .json({ error: `Webhook signature verification failed: ${sigErr.message}` });
     }
   } else {
     // Dev-only fallback — gated on absence of STRIPE_WEBHOOK_SECRET
     if (process.env.NODE_ENV === 'production') {
       return res.status(400).json({ error: 'Webhook secret not configured.' });
     }
-    console.warn('[Webhook] ⚠️  Signature check skipped (dev mode — no STRIPE_WEBHOOK_SECRET set).');
+    console.warn(
+      '[Webhook] ⚠️  Signature check skipped (dev mode — no STRIPE_WEBHOOK_SECRET set).'
+    );
     try {
-      event = Buffer.isBuffer(req.body)
-        ? JSON.parse(req.body.toString('utf8'))
-        : req.body;
+      event = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body;
     } catch {
       return res.status(400).json({ error: 'Invalid JSON payload.' });
     }
@@ -248,9 +258,9 @@ const stripeWebhook = async (req, res) => {
   const eventType = event?.type;
 
   if (eventType === 'payment_intent.succeeded') {
-    const pi          = event.data?.object;
-    const bookingId   = pi?.metadata?.bookingId;
-    const piId        = pi?.id;
+    const pi = event.data?.object;
+    const bookingId = pi?.metadata?.bookingId;
+    const piId = pi?.id;
 
     console.log(`[Webhook] payment_intent.succeeded | pi=${piId} | booking=${bookingId}`);
 
@@ -266,10 +276,11 @@ const stripeWebhook = async (req, res) => {
 
       // ③ Update booking status to confirmed
       if (bookingId) {
-        await dbRun(
-          'UPDATE bookings SET status = ?, payment_intent_id = ? WHERE id = ?',
-          ['confirmed', piId, bookingId]
-        );
+        await dbRun('UPDATE bookings SET status = ?, payment_intent_id = ? WHERE id = ?', [
+          'confirmed',
+          piId,
+          bookingId,
+        ]);
 
         // Fetch booking details for email
         const booking = await dbGet(
@@ -285,19 +296,19 @@ const stripeWebhook = async (req, res) => {
         if (booking && mailer) {
           const totalUsd = (pi.amount || 0) / 100;
           const emailPayload = buildConfirmationEmail({
-            guestName:       booking.full_name || 'Valued Guest',
-            guestEmail:      booking.user_email,
-            bookingRef:      `IMXX-${String(booking.id).padStart(6, '0')}`,
+            guestName: booking.full_name || 'Valued Guest',
+            guestEmail: booking.user_email,
+            bookingRef: `IMXX-${String(booking.id).padStart(6, '0')}`,
             destinationName: booking.destination_name || booking.item_name || 'Your Booking',
-            checkIn:         booking.check_in  || 'N/A',
-            checkOut:        booking.check_out || 'N/A',
+            checkIn: booking.check_in || 'N/A',
+            checkOut: booking.check_out || 'N/A',
             totalUsd,
           });
 
           // ④ Fire-and-forget email — don't fail webhook if email fails
-          mailer.sendMail(emailPayload).catch(e =>
-            console.error('[Webhook] Email dispatch failed:', e.message)
-          );
+          mailer
+            .sendMail(emailPayload)
+            .catch((e) => console.error('[Webhook] Email dispatch failed:', e.message));
         }
       }
     } catch (dbErr) {
@@ -305,25 +316,20 @@ const stripeWebhook = async (req, res) => {
       // Return 500 so Stripe retries (up to 25× over 3 days)
       return res.status(500).json({ error: 'Internal processing error.' });
     }
-  }
-
-  else if (eventType === 'payment_intent.payment_failed') {
-    const pi        = event.data?.object;
+  } else if (eventType === 'payment_intent.payment_failed') {
+    const pi = event.data?.object;
     const bookingId = pi?.metadata?.bookingId;
     if (bookingId) {
-      await dbRun('UPDATE bookings SET status = ? WHERE id = ?', ['failed', bookingId]).catch(e =>
+      await dbRun('UPDATE bookings SET status = ? WHERE id = ?', ['failed', bookingId]).catch((e) =>
         console.error('[Webhook] Failed to mark booking as failed:', e)
       );
     }
-  }
-
-  else {
+  } else {
     console.log(`[Webhook] Unhandled event type "${eventType}" — acknowledged.`);
   }
 
   // Always return 200 to Stripe for acknowledgement
   return res.status(200).json({ received: true });
 };
-
 
 module.exports = { createPaymentIntent, stripeWebhook };

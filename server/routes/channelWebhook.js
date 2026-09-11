@@ -38,10 +38,10 @@
 'use strict';
 
 const express = require('express');
-const crypto  = require('crypto');
-const https   = require('https');
-const http    = require('http');
-const router  = express.Router();
+const crypto = require('crypto');
+const https = require('https');
+const http = require('http');
+const router = express.Router();
 
 const {
   buildBookingPayload,
@@ -59,18 +59,17 @@ let authenticateToken, dbRun, dbGet, dbAll, sanitize, stripe;
 
 function init(deps) {
   authenticateToken = deps.authenticateToken;
-  dbRun             = deps.dbRun;
-  dbGet             = deps.dbGet;
-  dbAll             = deps.dbAll;
-  sanitize          = deps.sanitize;
-  stripe            = deps.stripe;
+  dbRun = deps.dbRun;
+  dbGet = deps.dbGet;
+  dbAll = deps.dbAll;
+  sanitize = deps.sanitize;
+  stripe = deps.stripe;
 }
 
 const requireAuth = (req, res, next) => {
   if (authenticateToken) return authenticateToken(req, res, next);
   next(new Error('authenticateToken not initialized'));
 };
-
 
 // ── Inbound event log (in-memory ring buffer, last 200 events) ────────────────
 // In production: replace with a database table or structured logging service.
@@ -82,7 +81,7 @@ function logEvent(entry) {
 
 // ── Replay-attack prevention (in-memory, last 5 min timestamps) ───────────────
 const seenRequestIds = new Set();
-setTimeout(() => seenRequestIds.clear(), 5 * 60 * 1000);  // Flush every 5 min
+setTimeout(() => seenRequestIds.clear(), 5 * 60 * 1000); // Flush every 5 min
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DIRECTION A — INBOUND: Channel Manager → IMXX
@@ -101,8 +100,8 @@ router.post('/', async (req, res, next) => {
   //   X-CM-Timestamp: <unix-ms>     (for replay-attack prevention)
   //   X-CM-Request-Id: <uuid>       (idempotency key)
   //
-  const receivedSig   = req.headers['x-cm-signature'];
-  const receivedTs    = req.headers['x-cm-timestamp'];
+  const receivedSig = req.headers['x-cm-signature'];
+  const receivedTs = req.headers['x-cm-timestamp'];
   const receivedReqId = req.headers['x-cm-request-id'] || crypto.randomUUID();
 
   if (WEBHOOK_SECRET) {
@@ -121,10 +120,8 @@ router.post('/', async (req, res, next) => {
     // req.body is pre-parsed JSON by express.json() — reconstruct raw string
     // Note: For production, capture raw body with express.raw() (like Stripe webhook)
     const rawBody = JSON.stringify(req.body);
-    const expectedSig = 'sha256=' + crypto
-      .createHmac('sha256', WEBHOOK_SECRET)
-      .update(rawBody)
-      .digest('hex');
+    const expectedSig =
+      'sha256=' + crypto.createHmac('sha256', WEBHOOK_SECRET).update(rawBody).digest('hex');
 
     const sigMatch = crypto.timingSafeEqual(
       Buffer.from(receivedSig, 'utf8'),
@@ -137,12 +134,16 @@ router.post('/', async (req, res, next) => {
     }
   } else {
     // Dev mode: skip signature check but log loudly
-    console.warn('[Webhook-CM] ⚠️  CM_WEBHOOK_SECRET not set — accepting without verification (dev mode).');
+    console.warn(
+      '[Webhook-CM] ⚠️  CM_WEBHOOK_SECRET not set — accepting without verification (dev mode).'
+    );
   }
 
   // ── A2. Idempotency / Replay Prevention ───────────────────────────────────
   if (seenRequestIds.has(receivedReqId)) {
-    console.log(`[Webhook-CM] Duplicate request_id ${receivedReqId} — acknowledged without reprocessing.`);
+    console.log(
+      `[Webhook-CM] Duplicate request_id ${receivedReqId} — acknowledged without reprocessing.`
+    );
     return res.status(200).json({ received: true, action: 'duplicate_ignored' });
   }
   seenRequestIds.add(receivedReqId);
@@ -172,31 +173,36 @@ router.post('/', async (req, res, next) => {
   });
 });
 
-
 /**
  * Process a validated inbound CM event by type.
  * All heavy work (DB writes, cache invalidation) happens here.
  */
 async function processCMEvent(eventType, data, requestId) {
-  logEvent({ eventType, requestId, propertyId: data?.property_id, bookingRef: data?.partner_reference });
+  logEvent({
+    eventType,
+    requestId,
+    propertyId: data?.property_id,
+    bookingRef: data?.partner_reference,
+  });
 
   switch (eventType) {
-
     // ─────────────────────────────────────────────────────────────────────
     // BOOKING.CONFIRMED: CM confirmed our reservation request
     // Fired by the CM after we send a /reserve outbound call.
     // ─────────────────────────────────────────────────────────────────────
     case 'booking.confirmed': {
       const {
-        partner_reference: imxxRef,    // our booking ref we sent
-        cm_confirmation_id,            // CM's own confirmation number
+        partner_reference: imxxRef, // our booking ref we sent
+        cm_confirmation_id, // CM's own confirmation number
         property_id,
         room_type_id,
         total_net,
         currency,
       } = data;
 
-      console.log(`[Webhook-CM] ✅ Booking CONFIRMED | IMXX: ${imxxRef} | CM: ${cm_confirmation_id}`);
+      console.log(
+        `[Webhook-CM] ✅ Booking CONFIRMED | IMXX: ${imxxRef} | CM: ${cm_confirmation_id}`
+      );
 
       // Update booking status in our DB if we track it
       try {
@@ -218,20 +224,21 @@ async function processCMEvent(eventType, data, requestId) {
     // ─────────────────────────────────────────────────────────────────────
     case 'booking.cancelled': {
       const { partner_reference, cancellation_reason, refund_amount } = data;
-      console.log(`[Webhook-CM] ❌ Booking CANCELLED | IMXX: ${partner_reference} | Reason: ${cancellation_reason}`);
+      console.log(
+        `[Webhook-CM] ❌ Booking CANCELLED | IMXX: ${partner_reference} | Reason: ${cancellation_reason}`
+      );
 
       try {
-        await dbRun(
-          `UPDATE bookings SET status = 'cancelled' WHERE utr = ?`,
-          [partner_reference]
-        );
+        await dbRun(`UPDATE bookings SET status = 'cancelled' WHERE utr = ?`, [partner_reference]);
       } catch (dbErr) {
         console.error('[Webhook-CM] DB update failed for booking.cancelled:', dbErr.message);
       }
 
       // TODO: Trigger Stripe refund via stripe.refunds.create() if refund_amount > 0
       if (refund_amount && parseFloat(refund_amount) > 0) {
-        console.log(`[Webhook-CM] Refund due: ${refund_amount} ${data.currency || 'USD'} — manual refund needed.`);
+        console.log(
+          `[Webhook-CM] Refund due: ${refund_amount} ${data.currency || 'USD'} — manual refund needed.`
+        );
       }
       break;
     }
@@ -244,7 +251,7 @@ async function processCMEvent(eventType, data, requestId) {
       const { property_id, room_type_id, available_count, date } = data;
       console.log(
         `[Webhook-CM] 🔄 Availability update | Property: ${property_id} | ` +
-        `Room: ${room_type_id} | Avail: ${available_count} | Date: ${date}`
+          `Room: ${room_type_id} | Avail: ${available_count} | Date: ${date}`
       );
       // In a full implementation: update a hostel_availability table or
       // invalidate the relevant search cache entry.
@@ -259,7 +266,7 @@ async function processCMEvent(eventType, data, requestId) {
       const { property_id, room_type_id, new_net_rate, effective_from } = data;
       console.log(
         `[Webhook-CM] 💰 Rate change | Property: ${property_id} | ` +
-        `Room: ${room_type_id} | New net rate: $${new_net_rate} from ${effective_from}`
+          `Room: ${room_type_id} | New net rate: $${new_net_rate} from ${effective_from}`
       );
       // In production: persist to a hostel_rates table and invalidate cache.
       break;
@@ -271,10 +278,9 @@ async function processCMEvent(eventType, data, requestId) {
     case 'booking.no_show': {
       const { partner_reference } = data;
       console.log(`[Webhook-CM] 🚫 No-show | IMXX: ${partner_reference}`);
-      await dbRun(
-        `UPDATE bookings SET status = 'no_show' WHERE utr = ?`,
-        [partner_reference]
-      ).catch(err => console.error('[Webhook-CM] no_show DB update failed:', err.message));
+      await dbRun(`UPDATE bookings SET status = 'no_show' WHERE utr = ?`, [
+        partner_reference,
+      ]).catch((err) => console.error('[Webhook-CM] no_show DB update failed:', err.message));
       break;
     }
 
@@ -282,7 +288,6 @@ async function processCMEvent(eventType, data, requestId) {
       console.log(`[Webhook-CM] Unhandled event type: ${eventType} — logged and ignored.`);
   }
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DIRECTION B — OUTBOUND: IMXX → Channel Manager
@@ -319,17 +324,17 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
     roomTypeId,
     checkInDate,
     checkOutDate,
-    guests         = 1,
+    guests = 1,
     paymentIntentId,
     specialRequests = {},
   } = req.body;
 
   // ── B1. Validate required fields ─────────────────────────────────────────
   const missing = [];
-  if (!propertyId)      missing.push('propertyId');
-  if (!roomTypeId)      missing.push('roomTypeId');
-  if (!checkInDate)     missing.push('checkInDate');
-  if (!checkOutDate)    missing.push('checkOutDate');
+  if (!propertyId) missing.push('propertyId');
+  if (!roomTypeId) missing.push('roomTypeId');
+  if (!checkInDate) missing.push('checkInDate');
+  if (!checkOutDate) missing.push('checkOutDate');
   if (!paymentIntentId) missing.push('paymentIntentId');
   if (missing.length) {
     return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}.` });
@@ -369,13 +374,13 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
   let nativeProperty, roomType;
 
   try {
-    const mockCheckIn  = checkInDate;
+    const mockCheckIn = checkInDate;
     const mockCheckOut = checkOutDate;
     const searchPayload = buildSearchPayload({
-      destination:  'any',
-      checkInDate:  mockCheckIn,
+      destination: 'any',
+      checkInDate: mockCheckIn,
       checkOutDate: mockCheckOut,
-      guests:       guestCount,
+      guests: guestCount,
     });
     const cmResponse = simulateCMSearchResponse(searchPayload);
 
@@ -384,49 +389,53 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
     );
 
     // Find the matching property
-    const rawProperty = cmResponse.properties.find(
-      p => `gds-${p.property_id}` === propertyId
-    );
+    const rawProperty = cmResponse.properties.find((p) => `gds-${p.property_id}` === propertyId);
 
     if (!rawProperty) {
       return res.status(404).json({ error: `Property ${propertyId} not found in inventory.` });
     }
 
     nativeProperty = mapPropertyToNative(rawProperty, {
-      nights, guests: guestCount, checkInDate, checkOutDate,
+      nights,
+      guests: guestCount,
+      checkInDate,
+      checkOutDate,
     });
 
-    roomType = nativeProperty.roomTypes.find(r => r.id === roomTypeId);
+    roomType = nativeProperty.roomTypes.find((r) => r.id === roomTypeId);
     if (!roomType) {
-      return res.status(404).json({ error: `Room type ${roomTypeId} not found for this property.` });
+      return res
+        .status(404)
+        .json({ error: `Room type ${roomTypeId} not found for this property.` });
     }
 
     if (!roomType.available) {
-      return res.status(409).json({ error: 'This room type is no longer available. Please select a different room.' });
+      return res
+        .status(409)
+        .json({ error: 'This room type is no longer available. Please select a different room.' });
     }
-
   } catch (resolveErr) {
     console.error('[Reserve] Property resolution failed:', resolveErr.message);
     return next(resolveErr);
   }
 
   // ── B4. Generate IMXX Booking Reference ──────────────────────────────────
-  const imxxBookingRef = generateBookingRef();  // e.g. IMXX-20260611-A3KX9Q
+  const imxxBookingRef = generateBookingRef(); // e.g. IMXX-20260611-A3KX9Q
 
   const nights = Math.round(
     (new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24)
   );
 
   // ── B5. Build CM Reservation Payload ─────────────────────────────────────
-  const customer = req.user;  // decoded from JWT by authenticateToken
+  const customer = req.user; // decoded from JWT by authenticateToken
 
   const cmPayload = buildBookingPayload({
-    property:        nativeProperty,
+    property: nativeProperty,
     roomType,
     customer,
     checkInDate,
     checkOutDate,
-    guests:          guestCount,
+    guests: guestCount,
     imxxBookingRef,
     paymentIntentId,
     specialRequests,
@@ -439,11 +448,10 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
   try {
     if (useMock) {
       // Simulate CM confirmation response
-      await new Promise(r => setTimeout(r, 150 + Math.random() * 200)); // ~150-350ms
+      await new Promise((r) => setTimeout(r, 150 + Math.random() * 200)); // ~150-350ms
       cmConfirmationId = `CM-CONF-${Date.now().toString(36).toUpperCase()}`;
       console.log(
-        `[Reserve] Mock CM confirmation: ${cmConfirmationId} ` +
-        `for IMXX ref: ${imxxBookingRef}`
+        `[Reserve] Mock CM confirmation: ${cmConfirmationId} ` + `for IMXX ref: ${imxxBookingRef}`
       );
     } else {
       // Real CM POST
@@ -460,16 +468,17 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
 
     // In production: trigger a refund via stripe.refunds.create()
     return res.status(502).json({
-      error:       'Room reservation could not be confirmed. Your payment will be refunded automatically.',
-      code:        'CM_RESERVATION_FAILED',
+      error:
+        'Room reservation could not be confirmed. Your payment will be refunded automatically.',
+      code: 'CM_RESERVATION_FAILED',
       imxxBookingRef,
-      action:      'refund_initiated',
+      action: 'refund_initiated',
     });
   }
 
   // ── B7. Persist Booking to IMXX DB ───────────────────────────────────────
   const totalDisplayPrice = parseFloat((roomType.displayPricePerNight * nights).toFixed(2));
-  const displayPriceStr   = `$${totalDisplayPrice.toFixed(2)}`;
+  const displayPriceStr = `$${totalDisplayPrice.toFixed(2)}`;
 
   try {
     await dbRun(
@@ -498,14 +507,14 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
     nights,
     imxxBookingRef,
     cmConfirmationId,
-    hostelOwnerId: null,  // null when property is from CM (not a direct IMXX owner)
+    hostelOwnerId: null, // null when property is from CM (not a direct IMXX owner)
   });
 
   console.log(
     `[Reserve] 💰 Commission accrued | ${imxxBookingRef} | ` +
-    `Sell: $${commissionRecord.total_sell} | ` +
-    `Net owed: $${commissionRecord.total_net_owed_to_cm} | ` +
-    `IMXX gross: $${commissionRecord.imxx_gross_commission}`
+      `Sell: $${commissionRecord.total_sell} | ` +
+      `Net owed: $${commissionRecord.total_net_owed_to_cm} | ` +
+      `IMXX gross: $${commissionRecord.imxx_gross_commission}`
   );
 
   // In production: write commissionRecord to a cm_commission_ledger table.
@@ -515,17 +524,17 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
 
   // ── B9. Respond to Client ─────────────────────────────────────────────────
   return res.status(201).json({
-    message:          'Booking confirmed successfully!',
+    message: 'Booking confirmed successfully!',
     imxxBookingRef,
     cmConfirmationId,
     property: {
-      id:       nativeProperty.id,
-      name:     nativeProperty.name,
+      id: nativeProperty.id,
+      name: nativeProperty.name,
       location: nativeProperty.location,
     },
     room: {
-      id:    roomType.id,
-      name:  roomType.name,
+      id: roomType.id,
+      name: roomType.name,
     },
     stay: {
       checkInDate,
@@ -536,19 +545,18 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
     pricing: {
       displayPricePerNight: roomType.displayPricePerNight,
       totalDisplayPrice,
-      currency:             nativeProperty.currency,
+      currency: nativeProperty.currency,
     },
     commission: {
-      totalSell:          commissionRecord.total_sell,
-      totalNetOwedToCM:   commissionRecord.total_net_owed_to_cm,
-      imxxGrossCommission:commissionRecord.imxx_gross_commission,
-      markupMultiplier:   commissionRecord.markup_multiplier,
-      payoutCycle:        commissionRecord.payout_cycle,
-      status:             commissionRecord.commission_status,
+      totalSell: commissionRecord.total_sell,
+      totalNetOwedToCM: commissionRecord.total_net_owed_to_cm,
+      imxxGrossCommission: commissionRecord.imxx_gross_commission,
+      markupMultiplier: commissionRecord.markup_multiplier,
+      payoutCycle: commissionRecord.payout_cycle,
+      status: commissionRecord.commission_status,
     },
   });
 });
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DIRECTION B — CM HTTP Client (Outbound POST for Reservations)
@@ -561,15 +569,15 @@ router.post('/reserve', requireAuth, async (req, res, next) => {
  */
 async function callChannelManagerReserve(cmPayload) {
   const CM_BASE_URL = process.env.CM_API_BASE_URL;
-  const CM_API_KEY  = process.env.CM_API_KEY;
-  const CM_SECRET   = process.env.CM_API_SECRET;
+  const CM_API_KEY = process.env.CM_API_KEY;
+  const CM_SECRET = process.env.CM_API_SECRET;
 
   if (!CM_BASE_URL || !CM_API_KEY) {
     throw new Error('[CM] CM_API_BASE_URL and CM_API_KEY must be set when CM_MOCK_MODE=false');
   }
 
   const timestamp = Date.now().toString();
-  const body      = JSON.stringify(cmPayload);
+  const body = JSON.stringify(cmPayload);
   const signature = crypto
     .createHmac('sha256', CM_SECRET || '')
     .update(timestamp + body)
@@ -582,23 +590,23 @@ async function callChannelManagerReserve(cmPayload) {
     const req = lib.request(
       {
         hostname: url.hostname,
-        port:     url.port || (url.protocol === 'https:' ? 443 : 80),
-        path:     url.pathname,
-        method:   'POST',
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
+        path: url.pathname,
+        method: 'POST',
         headers: {
-          'Content-Type':   'application/json',
+          'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(body),
-          'X-API-Key':      CM_API_KEY,
-          'X-Timestamp':    timestamp,
-          'X-Signature':    signature,
-          'X-Channel':      'IMXX_NOMAD',
-          'Accept':         'application/json',
+          'X-API-Key': CM_API_KEY,
+          'X-Timestamp': timestamp,
+          'X-Signature': signature,
+          'X-Channel': 'IMXX_NOMAD',
+          Accept: 'application/json',
         },
-        timeout: 15000,  // 15s — reservations are critical, give CM more time
+        timeout: 15000, // 15s — reservations are critical, give CM more time
       },
       (res) => {
         let raw = '';
-        res.on('data', chunk => (raw += chunk));
+        res.on('data', (chunk) => (raw += chunk));
         res.on('end', () => {
           try {
             const parsed = JSON.parse(raw);
@@ -614,13 +622,15 @@ async function callChannelManagerReserve(cmPayload) {
       }
     );
 
-    req.on('timeout', () => { req.destroy(); reject(new Error('CM reservation timed out (15s)')); });
-    req.on('error', err => reject(new Error(`CM network error: ${err.message}`)));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('CM reservation timed out (15s)'));
+    });
+    req.on('error', (err) => reject(new Error(`CM network error: ${err.message}`)));
     req.write(body);
     req.end();
   });
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN: GET /api/webhooks/channel-manager/events
@@ -628,10 +638,9 @@ async function callChannelManagerReserve(cmPayload) {
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/events', requireAuth, (req, res) => {
   return res.json({
-    total:  inboundEventLog.length,
-    events: inboundEventLog.slice(0, 50),  // latest 50
+    total: inboundEventLog.length,
+    events: inboundEventLog.slice(0, 50), // latest 50
   });
 });
-
 
 module.exports = { router, init };

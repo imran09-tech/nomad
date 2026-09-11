@@ -8,7 +8,7 @@ export default function NavigationBar() {
     { path: '/flights', label: 'Flights', icon: Plane },
     { path: '/hotels', label: 'Hotels', icon: Building2 },
     { path: '/trains', label: 'Trains', icon: Train },
-    { path: '/tours', label: 'Tours', icon: Map }
+    { path: '/tours', label: 'Tours', icon: Map },
   ];
 
   return (
@@ -16,10 +16,10 @@ export default function NavigationBar() {
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center space-x-2">
-           <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-             <span className="text-black font-black text-xl">L</span>
-           </div>
-           <span className="text-white font-extrabold tracking-wide text-2xl">LUXE</span>
+          <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+            <span className="text-black font-black text-xl">L</span>
+          </div>
+          <span className="text-white font-extrabold tracking-wide text-2xl">LUXE</span>
         </div>
 
         {/* Links */}
@@ -36,10 +36,10 @@ export default function NavigationBar() {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <motion.div 
+                    <motion.div
                       layoutId="nav-pill"
                       className="absolute inset-0 bg-white/10 rounded-xl border border-white/10"
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                     />
                   )}
                   <item.icon className="w-4 h-4 relative z-10" />
@@ -52,7 +52,11 @@ export default function NavigationBar() {
 
         {/* Profile */}
         <div className="w-10 h-10 rounded-full border border-slate-700 bg-slate-800 overflow-hidden cursor-pointer hover:border-amber-500 transition-colors">
-           <img src="https://i.pravatar.cc/100?img=33" alt="Profile" className="w-full h-full object-cover" />
+          <img
+            src="https://i.pravatar.cc/100?img=33"
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
     </nav>

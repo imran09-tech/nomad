@@ -9,7 +9,7 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
   const [transitOptions, setTransitOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('All'); 
+  const [filter, setFilter] = useState('All');
 
   // Autocomplete State
   const { originCity = 'any', destinationCity = 'any', checkIn } = bookingContext;
@@ -20,18 +20,20 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
       try {
         setLoading(true);
         setError(null);
-        
+
         const [transitRes, irctcRes] = await Promise.all([
           axios.get('/api/v1/transit/search', {
             params: {
               originCity,
               destinationCity,
-              departureDate: checkIn || new Date().toISOString()
-            }
+              departureDate: checkIn || new Date().toISOString(),
+            },
           }),
-          axios.get('/api/v1/trains/live', {
-            params: { stationCode: activeStationCode }
-          }).catch(() => ({ data: { success: false, data: [] } }))
+          axios
+            .get('/api/v1/trains/live', {
+              params: { stationCode: activeStationCode },
+            })
+            .catch(() => ({ data: { success: false, data: [] } })),
         ]);
 
         let combinedData = [];
@@ -48,7 +50,7 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
           setError('Failed to fetch transit routes.');
         }
       } catch (err) {
-        console.error("Transit API Error:", err);
+        console.error('Transit API Error:', err);
         setError('Error connecting to live transit data.');
       } finally {
         setLoading(false);
@@ -58,7 +60,7 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
     fetchTransitData();
   }, [originCity, destinationCity, checkIn, activeStationCode]);
 
-  const filteredOptions = transitOptions.filter(opt => {
+  const filteredOptions = transitOptions.filter((opt) => {
     if (filter === 'All') return true;
     return opt.type === filter;
   });
@@ -72,19 +74,19 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
         operatorName: transit.operatorName,
         price: price,
         duration: transit.durationString,
-        chosenClass: chosenClass
+        chosenClass: chosenClass,
       },
       selectedTransit: {
         ...transit,
         number: transit.number || transit.id,
         class: chosenClass,
-        fare: price
-      }
+        fare: price,
+      },
     });
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -98,34 +100,36 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
       </div>
 
       <div className="relative z-10 flex flex-col space-y-8">
-        
         {/* Header Zone */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h2 className="text-3xl font-black tracking-tighter text-white mb-2">Live Ground Transit</h2>
+            <h2 className="text-3xl font-black tracking-tighter text-white mb-2">
+              Live Ground Transit
+            </h2>
             <div className="inline-flex items-center space-x-3 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full backdrop-blur-xl">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
               <span className="text-sm text-slate-300">
-                Monitoring Live Station: <strong className="text-white ml-1">{activeStationCode}</strong>
+                Monitoring Live Station:{' '}
+                <strong className="text-white ml-1">{activeStationCode}</strong>
               </span>
             </div>
           </div>
-          
+
           <div className="flex space-x-2 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
-            {['All', 'Train', 'Bus'].map(f => (
+            {['All', 'Train', 'Bus'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`relative px-6 py-2.5 rounded-xl text-sm font-bold transition-colors ${filter === f ? 'text-black' : 'text-slate-400 hover:text-white'}`}
               >
                 {filter === f && (
-                  <motion.div 
+                  <motion.div
                     layoutId="filter-active"
                     className="absolute inset-0 bg-amber-500 rounded-xl"
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                   />
                 )}
                 <span className="relative z-10 flex items-center space-x-2">
@@ -147,7 +151,7 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
         <div className="relative z-10 min-h-[400px]">
           <AnimatePresence mode="wait">
             {loading ? (
-              <motion.div 
+              <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -158,10 +162,12 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
                   <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
                   <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-full" />
                 </div>
-                <p className="mt-6 text-slate-400 font-medium tracking-widest uppercase text-sm">Connecting to Live Feed</p>
+                <p className="mt-6 text-slate-400 font-medium tracking-widest uppercase text-sm">
+                  Connecting to Live Feed
+                </p>
               </motion.div>
             ) : error ? (
-              <motion.div 
+              <motion.div
                 key="error"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -172,7 +178,7 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
                 <p className="text-red-400 font-medium">{error}</p>
               </motion.div>
             ) : filteredOptions.length === 0 ? (
-              <motion.div 
+              <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -182,26 +188,23 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
                 No {filter.toLowerCase()} routes actively tracked right now.
               </motion.div>
             ) : (
-              <motion.div 
-                key="results"
-                className="grid grid-cols-1 gap-6 pb-20"
-              >
+              <motion.div key="results" className="grid grid-cols-1 gap-6 pb-20">
                 {filteredOptions.map((transit, idx) => {
                   const isSelected = bookingContext.transitId === transit.id;
-                  
+
                   // Injecting default classes array for Train display compatibility
                   if (transit.type === 'Train' && !transit.classes) {
-                     const basePrice = transit.pricingTier || 450;
-                     transit.classes = {
-                       '3A': Math.round(basePrice * 2.6),
-                       '2A': Math.round(basePrice * 3.7),
-                       '1A': Math.round(basePrice * 6.2),
-                       'SL': basePrice
-                     };
+                    const basePrice = transit.pricingTier || 450;
+                    transit.classes = {
+                      '3A': Math.round(basePrice * 2.6),
+                      '2A': Math.round(basePrice * 3.7),
+                      '1A': Math.round(basePrice * 6.2),
+                      SL: basePrice,
+                    };
                   }
 
                   return transit.type === 'Train' ? (
-                    <PremiumTrainCard 
+                    <PremiumTrainCard
                       key={transit.id}
                       train={transit}
                       originCity={originCity}
@@ -210,7 +213,10 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
                       onSelect={handleSelect}
                     />
                   ) : (
-                    <div key={transit.id} className="rounded-2xl bg-white/[0.02] border border-white/5 p-5 text-slate-400">
+                    <div
+                      key={transit.id}
+                      className="rounded-2xl bg-white/[0.02] border border-white/5 p-5 text-slate-400"
+                    >
                       Bus Component Integration Pending
                     </div>
                   );
@@ -219,7 +225,6 @@ export default function MainTransitWrapper({ bookingContext, updateBookingContex
             )}
           </AnimatePresence>
         </div>
-
       </div>
     </motion.div>
   );

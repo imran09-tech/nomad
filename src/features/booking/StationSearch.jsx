@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Search } from 'lucide-react';
 
-export default function StationSearch({ onSelectStation, placeholder = "Search live railway stations (e.g., NDLS, HWH)..." }) {
+export default function StationSearch({
+  onSelectStation,
+  placeholder = 'Search live railway stations (e.g., NDLS, HWH)...',
+}) {
   const [inputValue, setInputValue] = useState('');
   const [suggestionsList, setSuggestionsList] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -28,7 +31,7 @@ export default function StationSearch({ onSelectStation, placeholder = "Search l
     const fetchSuggestions = async () => {
       try {
         const response = await axios.get('/api/v1/train/suggest', {
-          params: { text: inputValue }
+          params: { text: inputValue },
         });
         setSuggestionsList((response.data || []).slice(0, 4));
       } catch (error) {
@@ -104,4 +107,3 @@ export default function StationSearch({ onSelectStation, placeholder = "Search l
     </div>
   );
 }
-

@@ -3,7 +3,10 @@ import axios from 'axios';
 import { Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function StationSearchBox({ onSelectStation, placeholder = "Search live railway stations..." }) {
+export default function StationSearchBox({
+  onSelectStation,
+  placeholder = 'Search live railway stations...',
+}) {
   const [inputValue, setInputValue] = useState('');
   const [suggestionsList, setSuggestionsList] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -29,7 +32,7 @@ export default function StationSearchBox({ onSelectStation, placeholder = "Searc
     const fetchSuggestions = async () => {
       try {
         const response = await axios.get('/api/v1/train/suggest', {
-          params: { text: inputValue }
+          params: { text: inputValue },
         });
         setSuggestionsList((response.data || []).slice(0, 4));
       } catch (error) {
@@ -57,13 +60,15 @@ export default function StationSearchBox({ onSelectStation, placeholder = "Searc
 
   return (
     <div className="relative w-full max-w-2xl mx-auto" ref={containerRef}>
-      <motion.div 
+      <motion.div
         className={`relative rounded-2xl overflow-hidden transition-all duration-500 bg-white/[0.02] border backdrop-blur-2xl ${isFocused ? 'border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.15)]' : 'border-white/5'}`}
         initial={false}
         animate={{ scale: isFocused ? 1.02 : 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
-        <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${isFocused ? 'text-amber-500' : 'text-slate-500'}`} />
+        <Search
+          className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${isFocused ? 'text-amber-500' : 'text-slate-500'}`}
+        />
         <input
           type="text"
           className="w-full bg-transparent text-white placeholder:text-slate-500 block pl-14 pr-5 py-4 text-base focus:outline-none"
@@ -87,11 +92,11 @@ export default function StationSearchBox({ onSelectStation, placeholder = "Searc
       {/* Floating Interactive Dropdown Menu */}
       <AnimatePresence>
         {showDropdown && suggestionsList.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             className="absolute z-50 w-full mt-3 overflow-hidden rounded-2xl bg-[#090d16]/90 border border-white/5 backdrop-blur-3xl shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
           >
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2">
@@ -110,7 +115,9 @@ export default function StationSearchBox({ onSelectStation, placeholder = "Searc
                       <span className="text-lg">🚂</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-200 block text-base group-hover:text-white transition-colors">{station.name}</span>
+                      <span className="font-semibold text-slate-200 block text-base group-hover:text-white transition-colors">
+                        {station.name}
+                      </span>
                       <span className="text-xs text-slate-500">
                         {station.state ? `${station.state} • ` : ''}Railway Station
                       </span>

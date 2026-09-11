@@ -19,7 +19,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
  */
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token      = authHeader && authHeader.split(' ')[1];
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
     return next(createError('Access denied. No token provided.', 401));
@@ -27,15 +27,15 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    
+
     // Dynamically retrieve the user's current role from SQLite
     const dbUser = await dbGet('SELECT role FROM users WHERE id = ?', [decoded.id]);
-    
+
     req.user = {
       ...decoded,
-      role: dbUser ? dbUser.role : 'user'
+      role: dbUser ? dbUser.role : 'user',
     };
-    
+
     next();
   } catch (err) {
     // Forward JWT-specific errors; globalErrorHandler maps them to 401
@@ -49,13 +49,15 @@ const authenticateToken = async (req, res, next) => {
  *
  * Usage: router.use(authenticateToken, restrictTo('admin'))
  */
-const restrictTo = (...roles) => (req, res, next) => {
-  if (!req.user) return next(createError('Not authenticated.', 401));
-  if (!roles.includes(req.user.role)) {
-    return next(createError('Forbidden: insufficient permissions.', 403));
-  }
-  next();
-};
+const restrictTo =
+  (...roles) =>
+  (req, res, next) => {
+    if (!req.user) return next(createError('Not authenticated.', 401));
+    if (!roles.includes(req.user.role)) {
+      return next(createError('Forbidden: insufficient permissions.', 403));
+    }
+    next();
+  };
 
 module.exports = { authenticateToken, restrictTo };
 

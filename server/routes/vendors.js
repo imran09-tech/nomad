@@ -24,7 +24,7 @@
 'use strict';
 
 const express = require('express');
-const router  = express.Router();
+const router = express.Router();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // DEPENDENCIES — injected at router init time to avoid circular references
@@ -38,12 +38,12 @@ let dbRun, dbGet, dbAll, authenticateToken, sanitize, stripe;
  * @param {object} deps
  */
 function init(deps) {
-  dbRun             = deps.dbRun;
-  dbGet             = deps.dbGet;
-  dbAll             = deps.dbAll;
+  dbRun = deps.dbRun;
+  dbGet = deps.dbGet;
+  dbAll = deps.dbAll;
   authenticateToken = deps.authenticateToken;
-  sanitize          = deps.sanitize;
-  stripe            = deps.stripe;
+  sanitize = deps.sanitize;
+  stripe = deps.stripe;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,6 @@ const requireAuth = (req, res, next) => {
   next(new Error('authenticateToken not initialized'));
 };
 
-
 /** Validate a Stripe Connect account ID (format: acct_XXXXXXXXXXXXXXXX) */
 const STRIPE_ACCT_RE = /^acct_[0-9A-Za-z]{16,}$/;
 function isValidStripeAccountId(id) {
@@ -65,7 +64,7 @@ function isValidStripeAccountId(id) {
 /** Validate commission rate: must be a number between 0.01 and 0.50 */
 function isValidCommissionRate(rate) {
   const n = parseFloat(rate);
-  return !isNaN(n) && n >= 0.01 && n <= 0.50;
+  return !isNaN(n) && n >= 0.01 && n <= 0.5;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -93,16 +92,16 @@ router.post('/register', requireAuth, async (req, res, next) => {
     stripeConnectedAccountId,
     bankHolderName,
     bankAccountLast4,
-    commissionRate = 0.12,   // Default: 12% platform cut
+    commissionRate = 0.12, // Default: 12% platform cut
   } = req.body;
 
   // ── Field presence checks ─────────────────────────────────────────────────
   const missing = [];
-  if (!businessName)             missing.push('businessName');
-  if (!contactEmail)             missing.push('contactEmail');
+  if (!businessName) missing.push('businessName');
+  if (!contactEmail) missing.push('contactEmail');
   if (!stripeConnectedAccountId) missing.push('stripeConnectedAccountId');
-  if (!bankHolderName)           missing.push('bankHolderName');
-  if (!bankAccountLast4)         missing.push('bankAccountLast4');
+  if (!bankHolderName) missing.push('bankHolderName');
+  if (!bankAccountLast4) missing.push('bankAccountLast4');
   if (missing.length) {
     return res.status(400).json({
       error: `Missing required fields: ${missing.join(', ')}.`,
@@ -136,10 +135,9 @@ router.post('/register', requireAuth, async (req, res, next) => {
 
   // ── Duplicate email guard ─────────────────────────────────────────────────
   try {
-    const existing = await dbGet(
-      'SELECT id FROM hostel_owners WHERE contact_email = ?',
-      [contactEmail.toLowerCase()]
-    );
+    const existing = await dbGet('SELECT id FROM hostel_owners WHERE contact_email = ?', [
+      contactEmail.toLowerCase(),
+    ]);
     if (existing) {
       return res.status(409).json({
         error: 'A vendor account with this email already exists.',
@@ -155,7 +153,7 @@ router.post('/register', requireAuth, async (req, res, next) => {
       [
         sanitize(businessName),
         contactEmail.toLowerCase(),
-        stripeConnectedAccountId,                // not sanitized: validated by regex
+        stripeConnectedAccountId, // not sanitized: validated by regex
         sanitize(bankHolderName),
         String(bankAccountLast4),
         parseFloat(commissionRate),
@@ -163,15 +161,13 @@ router.post('/register', requireAuth, async (req, res, next) => {
     );
 
     return res.status(201).json({
-      message:  'Partner vendor registered successfully. Pending verification.',
+      message: 'Partner vendor registered successfully. Pending verification.',
       vendorId: result.lastID,
     });
-
   } catch (err) {
     next(err);
   }
 });
-
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ROUTE 2 — Partner Dashboard Stats
@@ -240,30 +236,28 @@ router.get('/:id/dashboard', requireAuth, async (req, res, next) => {
 
     return res.json({
       vendor: {
-        id:               owner.id,
-        businessName:     owner.business_name,
-        contactEmail:     owner.contact_email,
-        commissionRate:   owner.commission_rate,
-        bankHolderName:   owner.bank_holder_name,
-        bankLast4:        owner.bank_account_last4,
-        isVerified:       !!owner.is_verified,
+        id: owner.id,
+        businessName: owner.business_name,
+        contactEmail: owner.contact_email,
+        commissionRate: owner.commission_rate,
+        bankHolderName: owner.bank_holder_name,
+        bankLast4: owner.bank_account_last4,
+        isVerified: !!owner.is_verified,
       },
       kpis: {
-        grossRevenue:     parseFloat(kpis.gross_revenue.toFixed(2)),
-        totalCommission:  parseFloat(kpis.total_commission.toFixed(2)),
-        netTransferred:   parseFloat(kpis.net_transferred.toFixed(2)),
-        totalPayoutDue:   parseFloat(kpis.total_payout_due.toFixed(2)),
-        totalBookings:    kpis.total_bookings,
+        grossRevenue: parseFloat(kpis.gross_revenue.toFixed(2)),
+        totalCommission: parseFloat(kpis.total_commission.toFixed(2)),
+        netTransferred: parseFloat(kpis.net_transferred.toFixed(2)),
+        totalPayoutDue: parseFloat(kpis.total_payout_due.toFixed(2)),
+        totalBookings: kpis.total_bookings,
       },
       recentPayouts,
       listings,
     });
-
   } catch (err) {
     next(err);
   }
 });
-
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ROUTE 3 — Add a Hostel Listing for a Partner
@@ -307,14 +301,13 @@ router.post('/:id/listings', requireAuth, async (req, res, next) => {
     );
 
     return res.status(201).json({
-      message:   'Hostel listing created successfully.',
+      message: 'Hostel listing created successfully.',
       listingId: result.lastID,
     });
   } catch (err) {
     next(err);
   }
 });
-
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ROUTE 4 — List All Registered Partners  [Admin-only]
@@ -334,7 +327,6 @@ router.get('/', requireAuth, async (req, res, next) => {
     next(err);
   }
 });
-
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ROUTE 5 — Update Commission Rate  [Admin-only]
@@ -357,16 +349,15 @@ router.put('/:id/commission', requireAuth, async (req, res, next) => {
     const owner = await dbGet('SELECT id FROM hostel_owners WHERE id = ?', [ownerId]);
     if (!owner) return res.status(404).json({ error: 'Vendor partner not found.' });
 
-    await dbRun(
-      'UPDATE hostel_owners SET commission_rate = ? WHERE id = ?',
-      [parseFloat(commissionRate), ownerId]
-    );
+    await dbRun('UPDATE hostel_owners SET commission_rate = ? WHERE id = ?', [
+      parseFloat(commissionRate),
+      ownerId,
+    ]);
 
     return res.json({ message: 'Commission rate updated successfully.' });
   } catch (err) {
     next(err);
   }
 });
-
 
 module.exports = { router, init };

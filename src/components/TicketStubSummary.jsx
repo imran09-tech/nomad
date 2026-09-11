@@ -1,4 +1,3 @@
-
 export default function TicketStubSummary({ children, leftContent, rightContent, className = '' }) {
   return (
     <div className={`flex w-full overflow-hidden shadow-2xl ${className}`}>

@@ -9,11 +9,11 @@ export default function FloatingSearchHub() {
     { id: 'flights', label: 'Flights' },
     { id: 'hotels', label: 'Hotels' },
     { id: 'trains', label: 'Trains' },
-    { id: 'tours', label: 'Tours' }
+    { id: 'tours', label: 'Tours' },
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -30,10 +30,10 @@ export default function FloatingSearchHub() {
             }`}
           >
             {activeTab === tab.id && (
-              <motion.div 
+              <motion.div
                 layoutId="search-hub-active-tab"
                 className="absolute inset-0 bg-slate-800/80 border border-slate-700/50 rounded-xl"
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               />
             )}
             <span className="relative z-10">{tab.label}</span>
@@ -46,18 +46,18 @@ export default function FloatingSearchHub() {
         {/* Input: Origin */}
         <div className="relative col-span-1 md:col-span-1">
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="From where?"
             className="w-full bg-[#05080f] shadow-inner text-white placeholder:text-slate-600 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:border-amber-500/80 focus:ring-4 focus:ring-amber-500/10 border border-slate-800/60 transition-all duration-500 font-medium tracking-wide"
           />
         </div>
-        
+
         {/* Input: Destination */}
         <div className="relative col-span-1 md:col-span-1">
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Where to?"
             className="w-full bg-[#05080f] shadow-inner text-white placeholder:text-slate-600 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:border-amber-500/80 focus:ring-4 focus:ring-amber-500/10 border border-slate-800/60 transition-all duration-500 font-medium tracking-wide"
           />
@@ -66,8 +66,8 @@ export default function FloatingSearchHub() {
         {/* Input: Date */}
         <div className="relative col-span-1 md:col-span-1">
           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Dates"
             className="w-full bg-[#05080f] shadow-inner text-white placeholder:text-slate-600 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:border-amber-500/80 focus:ring-4 focus:ring-amber-500/10 border border-slate-800/60 transition-all duration-500 font-medium tracking-wide"
           />
@@ -76,14 +76,14 @@ export default function FloatingSearchHub() {
         {/* Input: Guests */}
         <div className="relative col-span-1 md:col-span-1 flex space-x-3">
           <div className="relative flex-1">
-             <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-             <input 
-               type="text" 
-               placeholder="Travelers"
-               className="w-full bg-[#05080f] shadow-inner text-white placeholder:text-slate-600 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:border-amber-500/80 focus:ring-4 focus:ring-amber-500/10 border border-slate-800/60 transition-all duration-500 font-medium tracking-wide"
-             />
+            <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Travelers"
+              className="w-full bg-[#05080f] shadow-inner text-white placeholder:text-slate-600 rounded-2xl pl-11 pr-4 py-4 text-sm focus:outline-none focus:border-amber-500/80 focus:ring-4 focus:ring-amber-500/10 border border-slate-800/60 transition-all duration-500 font-medium tracking-wide"
+            />
           </div>
-          <motion.button 
+          <motion.button
             whileTap={{ scale: 0.95 }}
             className="bg-amber-500 hover:bg-amber-400 text-black px-5 rounded-2xl flex items-center justify-center transition-colors shadow-[0_0_15px_rgba(245,158,11,0.3)]"
           >

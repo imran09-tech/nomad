@@ -23,7 +23,7 @@ const createTrade = asyncHandler(async (req, res) => {
     success: true,
     tradeId,
     status: 'PENDING_PAYMENT',
-    message: 'P2P trade initialized. Escrow locked.'
+    message: 'P2P trade initialized. Escrow locked.',
   });
 });
 
@@ -65,22 +65,27 @@ const submitPaymentProof = asyncHandler(async (req, res) => {
 
   // If a duplicate UTR is found, immediately transition the trade to DISPUTED to prevent fraud
   if (duplicate) {
-    await dbRun(
-      `UPDATE p2p_trades SET status = 'DISPUTED' WHERE id = ?`,
-      [tradeId]
-    );
+    await dbRun(`UPDATE p2p_trades SET status = 'DISPUTED' WHERE id = ?`, [tradeId]);
 
     // Save proof as flagged record
     await dbRun(
       `INSERT INTO p2p_payment_proofs (trade_id, buyer_id, utr_reference, proof_image_url, message_note, uploaded_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [tradeId, trade.buyer_id, utr, relativeUrl, `[SYSTEM WARNING: DUPLICATE UTR DETECTED] ${note || ''}`, now]
+      [
+        tradeId,
+        trade.buyer_id,
+        utr,
+        relativeUrl,
+        `[SYSTEM WARNING: DUPLICATE UTR DETECTED] ${note || ''}`,
+        now,
+      ]
     );
 
     return res.status(400).json({
       success: false,
       status: 'DISPUTED',
-      error: 'Fraud Alert: Duplicate transaction reference detected. This trade has been flagged and suspended. Admin mediator is reviewing.'
+      error:
+        'Fraud Alert: Duplicate transaction reference detected. This trade has been flagged and suspended. Admin mediator is reviewing.',
     });
   }
 
@@ -92,15 +97,12 @@ const submitPaymentProof = asyncHandler(async (req, res) => {
   );
 
   // Transition trade to PENDING_VERIFICATION
-  await dbRun(
-    `UPDATE p2p_trades SET status = 'PENDING_VERIFICATION' WHERE id = ?`,
-    [tradeId]
-  );
+  await dbRun(`UPDATE p2p_trades SET status = 'PENDING_VERIFICATION' WHERE id = ?`, [tradeId]);
 
   res.json({
     success: true,
     status: 'PENDING_VERIFICATION',
-    message: 'Payment proof submitted. Awaiting administrator verification.'
+    message: 'Payment proof submitted. Awaiting administrator verification.',
   });
 });
 
@@ -135,18 +137,16 @@ const verifyTradePayment = asyncHandler(async (req, res) => {
   );
 
   // Update overall trade status
-  await dbRun(
-    `UPDATE p2p_trades SET status = ? WHERE id = ?`,
-    [finalStatus, tradeId]
-  );
+  await dbRun(`UPDATE p2p_trades SET status = ? WHERE id = ?`, [finalStatus, tradeId]);
 
   res.json({
     success: true,
     tradeId,
     status: finalStatus,
-    message: action === 'APPROVE' 
-      ? 'Escrow released successfully. Funds routed to Buyer.' 
-      : `Trade verification rejected. Status set to DISPUTED. Reason: ${rejectionReason || 'N/A'}`
+    message:
+      action === 'APPROVE'
+        ? 'Escrow released successfully. Funds routed to Buyer.'
+        : `Trade verification rejected. Status set to DISPUTED. Reason: ${rejectionReason || 'N/A'}`,
   });
 });
 
@@ -173,7 +173,7 @@ const getTradeDetails = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    data: trade
+    data: trade,
   });
 });
 
@@ -181,5 +181,5 @@ module.exports = {
   createTrade,
   submitPaymentProof,
   verifyTradePayment,
-  getTradeDetails
+  getTradeDetails,
 };

@@ -25,7 +25,7 @@
     --shadow-glow: 0 0 35px rgba(212, 175, 55, 0.3);
     --shadow-glass: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
 
-    --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
     --font-main: 'Plus Jakarta Sans', sans-serif;
     --font-heading: 'Outfit', sans-serif;
 }

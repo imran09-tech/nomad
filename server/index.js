@@ -178,11 +178,7 @@ const reserveLimiter = rateLimit({
 });
 app.use('/api/webhooks/channel-manager/reserve', reserveLimiter);
 
-// Serve static files from parent directory
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/pic', express.static(path.join(__dirname, '../pic')));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
+// Removed duplicate static files mount
 // ─── Destination Video Upload & Range-Streaming Layer ────────────────────────
 const videoUploadDir = process.env.VERCEL
   ? path.join('/tmp', 'uploads', 'videos')
@@ -557,6 +553,15 @@ app.use(globalErrorHandler);
 // 404 handler for unknown API routes
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found.' });
+});
+
+// Catch-all route for client-side routing: serve the canonical homepage
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  } else {
+    next();
+  }
 });
 
 // ─────────────────────────────────────────────

@@ -181,7 +181,7 @@
                                 class="fa-solid fa-plane-departure"></i><span>Flights</span></a>
                         <a class="nav-item" data-view="trains" onclick="app.switchView('trains')"> <i
                                 class="fa-solid fa-train"></i><span>Trains</span></a>
-                        <a class="nav-item" href="onboarding.html" target="_blank" title="Launch 3D Onboarding Splash Animation"> <i
+                        <a class="nav-item" data-view="onboarding" onclick="app.switchView('onboarding'); initOnboarding();" title="Launch 3D Onboarding Splash Animation"> <i
                                 class="fa-solid fa-play" style="color: var(--gold);"></i><span>3D Onboarding Intro</span></a>
 
 
@@ -4425,6 +4425,172 @@
                 }, 1200);
             }
         </script>
-    </body>
+    
+<script>
+let onboardingInitialized = false;
+function initOnboarding() {
+if (onboardingInitialized) { runSequence(1); return; }
+onboardingInitialized = true;
+
+        function goBack() {
+            if (window.history.length > 1 && document.referrer && document.referrer.includes('nomad')) {
+                window.history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        
+            // Initialize Background Physics Engine
+            const canvas = document.getElementById('bg-canvas');
+            if (typeof AntiGravityEngine !== 'undefined' && canvas) {
+                const engine = AntiGravityEngine.create(canvas, {
+                    particleCount: 50,
+                    antiGravityForce: 0.07,
+                    repulsionRadius: 200,
+                    repulsionStrength: 400,
+                    dragCoefficient: 0.985
+                });
+                engine.start();
+            }
+
+            // Timeline Animation Sequence Elements
+            const phaseHook = document.getElementById('phaseHook');
+            const logoEmblem = document.getElementById('logoEmblem');
+            const logoTitle = document.getElementById('logoTitle');
+            const logoSub = document.getElementById('logoSub');
+            const cardsStage = document.getElementById('cardsStage');
+            const heroScreen = document.getElementById('heroScreen');
+            const phaseText = document.getElementById('phaseText');
+            const stageViewport = document.getElementById('stageViewport');
+            const btnReplay = document.getElementById('btnReplay');
+            const btnPrevPhase = document.getElementById('btnPrevPhase');
+            const btnNextPhase = document.getElementById('btnNextPhase');
+
+            let currentPhase = 1;
+            let animationTimeouts = [];
+
+            function clearTimeouts() {
+                animationTimeouts.forEach(t => clearTimeout(t));
+                animationTimeouts = [];
+            }
+
+            function setPhase(phase) {
+                clearTimeouts();
+                currentPhase = phase;
+
+                if (phase === 1) {
+                    phaseText.textContent = 'Phase 1: Fluid Reveal';
+                    phaseHook.style.opacity = '1';
+                    phaseHook.style.transform = 'scale(1) rotate(0deg)';
+                    logoEmblem.style.opacity = '1';
+                    logoEmblem.style.transform = 'scale(0) rotate(-180deg)';
+                    logoTitle.style.opacity = '0';
+                    logoTitle.style.transform = 'translateY(20px)';
+                    logoSub.style.opacity = '0';
+                    logoSub.style.transform = 'translateY(15px)';
+                    cardsStage.style.opacity = '0';
+                    heroScreen.classList.remove('active');
+                } else if (phase === 2) {
+                    phaseText.textContent = 'Phase 2: Logo Assembly';
+                    phaseHook.style.transform = 'scale(0.4) rotate(180deg)';
+                    phaseHook.style.opacity = '0.3';
+                    logoEmblem.style.opacity = '1';
+                    logoEmblem.style.transform = 'scale(1) rotate(0deg)';
+                    logoTitle.style.opacity = '1';
+                    logoTitle.style.transform = 'translateY(0)';
+                    logoSub.style.opacity = '1';
+                    logoSub.style.transform = 'translateY(0)';
+                    cardsStage.style.opacity = '0';
+                    heroScreen.classList.remove('active');
+                } else if (phase === 3) {
+                    phaseText.textContent = 'Phase 3: 3D Parallax Cards';
+                    phaseHook.style.opacity = '0';
+                    logoEmblem.style.opacity = '1';
+                    logoEmblem.style.transform = 'scale(0.8) translateY(-140px)';
+                    logoTitle.style.opacity = '0';
+                    logoSub.style.opacity = '0';
+                    cardsStage.style.opacity = '1';
+                    heroScreen.classList.remove('active');
+
+                    const cards = cardsStage.querySelectorAll('.glass-card-3d');
+                    cards[0].style.transform = 'translateZ(40px) translateY(0) rotateX(0deg)';
+                    cards[1].style.transform = 'translateZ(60px) translateX(0) rotateY(0deg)';
+                    cards[2].style.transform = 'translateZ(50px) translateX(0) rotateY(0deg)';
+                    cards[3].style.transform = 'translateZ(30px) translateY(0) rotateX(0deg)';
+                } else if (phase === 4) {
+                    phaseText.textContent = 'Phase 4: Settle & Hero Mode';
+                    phaseHook.style.opacity = '0';
+                    logoEmblem.style.opacity = '0';
+                    cardsStage.style.opacity = '0';
+                    heroScreen.classList.add('active');
+                }
+
+                updateNavState();
+            }
+
+            function updateNavState() {
+                if (btnPrevPhase) btnPrevPhase.disabled = (currentPhase <= 1);
+                if (btnNextPhase) btnNextPhase.disabled = (currentPhase >= 4);
+            }
+
+            function runSequence(startFrom = 1) {
+                clearTimeouts();
+                setPhase(startFrom);
+
+                if (startFrom <= 1) {
+                    animationTimeouts.push(setTimeout(() => setPhase(2), 1200));
+                }
+                if (startFrom <= 2) {
+                    animationTimeouts.push(setTimeout(() => setPhase(3), startFrom === 2 ? 1800 : 3000));
+                }
+                if (startFrom <= 3) {
+                    animationTimeouts.push(setTimeout(() => setPhase(4), startFrom === 3 ? 2200 : 5200));
+                }
+            }
+
+            // Interactive Parallax Motion on Mouse / Touch Move
+            stageViewport.addEventListener('mousemove', (e) => {
+                if (!heroScreen.classList.contains('active')) {
+                    const rect = stageViewport.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width - 0.5;
+                    const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+                    cardsStage.style.transform = `rotateY(${x * 25}deg) rotateX(${-y * 25}deg)`;
+                }
+            });
+
+            stageViewport.addEventListener('mouseleave', () => {
+                cardsStage.style.transform = 'rotateY(0deg) rotateX(0deg)';
+            });
+
+            if (btnReplay) {
+                btnReplay.addEventListener('click', () => {
+                    runSequence(1);
+                });
+            }
+
+            if (btnPrevPhase) {
+                btnPrevPhase.addEventListener('click', () => {
+                    if (currentPhase > 1) {
+                        setPhase(currentPhase - 1);
+                    }
+                });
+            }
+
+            if (btnNextPhase) {
+                btnNextPhase.addEventListener('click', () => {
+                    if (currentPhase < 4) {
+                        setPhase(currentPhase + 1);
+                    }
+                });
+            }
+
+            // Start animation sequence on page load
+            runSequence();
+        
+}
+</script>
+</body>
 
     </html>
